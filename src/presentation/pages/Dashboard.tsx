@@ -1,5 +1,5 @@
 import React from "react";
-import {Gamepad2, Copy, Monitor, Building, Plus, Search, MoreVertical} from "lucide-react";
+import {Gamepad2, Copy, Monitor, Building, MoreVertical} from "lucide-react";
 
 export const Dashboard: React.FC = () => {
     const statsCards = [
