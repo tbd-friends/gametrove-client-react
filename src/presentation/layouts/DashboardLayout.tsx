@@ -20,7 +20,7 @@ const DashboardLayout: React.FC = () => {
                 />
 
                 {/* Main Content Area */}
-                <main className="flex-1 p-6 overflow-auto">
+                <main className="flex-1 px-6 pt-6 pb-8 overflow-auto">
                     <div className="w-full">
                         <Outlet />
                     </div>
