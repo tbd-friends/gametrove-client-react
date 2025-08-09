@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Gamepad2, Copy, Monitor, Heart, Search, List, Grid3X3, Filter, ChevronRight, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const MyCollection: React.FC = () => {
     const [searchValue, setSearchValue] = useState('');
     const [viewMode, setViewMode] = useState<'list' | 'console'>('console');
+    const navigate = useNavigate();
 
     const statsCards = [
         {
@@ -193,8 +195,20 @@ export const MyCollection: React.FC = () => {
 
     return (
         <div className="w-full">
-            <h1 className="text-3xl font-bold text-white mb-2">My Collection</h1>
-            <p className="text-gray-400 mb-8">Track and manage your game library</p>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">My Collection</h1>
+                    <p className="text-gray-400">Track and manage your game library</p>
+                </div>
+                <button 
+                    onClick={() => navigate('/add-game')}
+                    className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
+                >
+                    <Plus size={20} />
+                    Add Game
+                </button>
+            </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
