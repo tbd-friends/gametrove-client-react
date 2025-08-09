@@ -34,13 +34,13 @@ export const Sidebar: React.FC<{
 
             {/* Sidebar */}
             <aside className={`
-        fixed top-16 left-0 h-[calc(100vh-4rem)] w-56 bg-slate-900 border-r border-slate-800 z-40
+        fixed top-0 left-0 h-screen w-56 bg-slate-900 border-r border-slate-800 z-40
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:h-auto lg:z-auto
+        lg:translate-x-0 lg:static lg:h-[calc(100vh-4rem)] lg:z-auto
       `}>
                 {/* Close button for mobile */}
-                <div className="lg:hidden flex justify-end p-4">
+                <div className="lg:hidden flex justify-end p-4 mt-16">
                     <button
                         onClick={onClose}
                         className="text-gray-400 hover:text-white"
@@ -50,7 +50,7 @@ export const Sidebar: React.FC<{
                 </div>
 
                 {/* Navigation Items */}
-                <nav className="mt-4 lg:mt-6">
+                <nav className="mt-20 lg:mt-20 px-2">
                     <ul>
                         {navItems.map((item) => (
                             <li key={item.path} className="mb-1 px-2">
