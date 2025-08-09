@@ -97,9 +97,11 @@ storybook-static/
 # Temporary files
 *.tmp
 
-# Reference images - temporary/communication files
-reference/archive/communication/
-reference/temp/
-temp_*.png
-debug_*.png
-*.screenshot.png
+# Reference images - only highly temporary files
+reference/temp/           # Personal temp folder (not for Claude communication)
+temp_*.png               # Files prefixed with temp_
+debug_*.png              # Files prefixed with debug_  
+*.screenshot.png         # Screenshot files
+
+# Note: reference/temp-communication/ and reference/archive/communication/ 
+# are now TRACKED for Claude Code communication and historical reference

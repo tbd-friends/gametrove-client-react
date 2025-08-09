@@ -7,12 +7,12 @@ const DashboardLayout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-slate-950 w-full">
+        <div className="h-screen bg-slate-950 w-full overflow-hidden">
             {/* Full-width Header */}
             <Header onMenuClick={() => setSidebarOpen(true)} />
             
             {/* Content Area with Sidebar */}
-            <div className="flex pt-16"> {/* pt-16 accounts for header height */}
+            <div className="flex h-[calc(100vh-4rem)]"> {/* Fixed height container */}
                 {/* Sidebar */}
                 <Sidebar
                     isOpen={sidebarOpen}

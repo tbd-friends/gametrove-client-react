@@ -37,7 +37,7 @@ export const Sidebar: React.FC<{
                     fixed top-0 left-0 h-screen w-56 bg-slate-900 border-r border-slate-800 z-30
                     transform transition-transform duration-300 ease-in-out
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:translate-x-0 lg:static lg:h-[calc(100vh-4rem)] lg:z-auto
+                    lg:translate-x-0 lg:static lg:h-full lg:z-auto
                 `}
                 role="navigation"
                 aria-label="Main navigation"
