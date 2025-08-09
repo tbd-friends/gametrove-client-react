@@ -71,3 +71,10 @@ This is a **Game Collection Management** application called "Gametrove" that all
 
 ## Development Workflow Reminders
 - Should not try to `npm run`, I will run the app, just indicate to me that now might be a good time to run
+
+## Branch Naming Conventions
+- When creating a branch, always use a prefix to indicate the purpose:
+  - `feature/` for new features or substantial improvements
+  - `chore/` for maintenance, cleanup, or non-feature work
+  - Branch names should be brief and descriptive, using hyphens to separate words
+  - Example: `chore/cleanup-code-styles` or `feature/add-game-search-functionality`
