@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Gamepad2, Copy, Monitor, Heart, Search, List, Grid3X3, Filter, ChevronRight } from "lucide-react";
+import { Gamepad2, Copy, Monitor, Heart, Search, List, Grid3X3, Filter, ChevronRight, Plus } from "lucide-react";
 
 export const MyCollection: React.FC = () => {
     const [searchValue, setSearchValue] = useState('');
@@ -108,6 +108,89 @@ export const MyCollection: React.FC = () => {
         }
     ];
 
+    const games = [
+        {
+            id: 1,
+            title: "Cyberpunk 2077",
+            platform: "PlayStation 5",
+            publisher: "CD Projekt Red",
+            copies: 3,
+            image: "👨‍💼"
+        },
+        {
+            id: 2,
+            title: "The Legend of Zelda: Breath of the Wild", 
+            platform: "Nintendo Switch",
+            publisher: "Nintendo",
+            copies: 1,
+            image: "🗡️"
+        },
+        {
+            id: 3,
+            title: "Halo Infinite",
+            platform: "Xbox Series X",
+            publisher: "Microsoft",
+            copies: 2,
+            image: "🚀"
+        },
+        {
+            id: 4,
+            title: "God of War Ragnarök",
+            platform: "PlayStation 5",
+            publisher: "Sony Interactive",
+            copies: 1,
+            image: "⚔️"
+        },
+        {
+            id: 5,
+            title: "Elden Ring",
+            platform: "PC",
+            publisher: "FromSoftware",
+            copies: 1,
+            image: "🏰"
+        },
+        {
+            id: 6,
+            title: "Spider-Man: Miles Morales",
+            platform: "PlayStation 5",
+            publisher: "Sony Interactive",
+            copies: 1,
+            image: "🕷️"
+        },
+        {
+            id: 7,
+            title: "Forza Horizon 5",
+            platform: "Xbox Series X",
+            publisher: "Microsoft",
+            copies: 1,
+            image: "🏎️"
+        },
+        {
+            id: 8,
+            title: "Super Mario Odyssey",
+            platform: "Nintendo Switch",
+            publisher: "Nintendo",
+            copies: 1,
+            image: "🍄"
+        },
+        {
+            id: 9,
+            title: "The Witcher 3: Wild Hunt",
+            platform: "PC",
+            publisher: "CD Projekt Red",
+            copies: 1,
+            image: "🗺️"
+        },
+        {
+            id: 10,
+            title: "Horizon Forbidden West",
+            platform: "PlayStation 5",
+            publisher: "Sony Interactive",
+            copies: 1,
+            image: "🏹"
+        }
+    ];
+
     return (
         <div className="w-full">
             <h1 className="text-3xl font-bold text-white mb-2">My Collection</h1>
@@ -193,29 +276,110 @@ export const MyCollection: React.FC = () => {
                     />
                 </div>
 
-                {/* Console Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {consoles.map((console) => (
-                        <div key={console.name} className="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-colors group cursor-pointer">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 ${console.color} rounded-lg flex items-center justify-center text-white text-lg`}>
-                                        {console.icon}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-semibold">{console.name}</h3>
-                                        <p className="text-gray-400 text-sm">{console.company}</p>
-                                    </div>
-                                </div>
-                                <ChevronRight size={20} className="text-gray-400 group-hover:text-white transition-colors" />
+                {/* Content Area - List or Console View */}
+                {viewMode === 'list' ? (
+                    /* Games List Table */
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-slate-600">
+                                    <th className="text-left text-gray-400 text-sm font-medium pb-3">Title</th>
+                                    <th className="text-left text-gray-400 text-sm font-medium pb-3">Platform</th>
+                                    <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
+                                    <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
+                                    <th className="text-left text-gray-400 text-sm font-medium pb-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {games.map((game) => (
+                                    <tr key={game.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
+                                        <td className="py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-xl">
+                                                    {game.image}
+                                                </div>
+                                                <div>
+                                                    <div className="text-white font-medium">{game.title}</div>
+                                                    <div className="text-gray-400 text-sm">Action</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-3">
+                                            <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                                                game.platform.includes('PlayStation') ? 'bg-blue-600 text-white' :
+                                                game.platform.includes('Xbox') ? 'bg-green-600 text-white' :
+                                                game.platform.includes('Nintendo') ? 'bg-red-600 text-white' :
+                                                'bg-purple-600 text-white'
+                                            }`}>
+                                                {game.platform}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 text-gray-300">{game.publisher}</td>
+                                        <td className="py-3">
+                                            <span className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium">
+                                                {game.copies}
+                                            </span>
+                                        </td>
+                                        <td className="py-3">
+                                            <button className="text-cyan-400 hover:text-cyan-300 p-1 rounded-md hover:bg-slate-600 transition-colors">
+                                                <Plus size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        
+                        {/* Pagination */}
+                        <div className="flex items-center justify-between mt-6">
+                            <div className="text-gray-400 text-sm">
+                                Showing 1-10 of 247 games
                             </div>
-                            <div className="mt-4 flex items-center justify-between">
-                                <div className="text-2xl font-bold text-green-400">{console.gameCount}</div>
-                                <div className="text-gray-400 text-sm">Games</div>
+                            <div className="flex items-center gap-2">
+                                <button className="px-3 py-2 bg-cyan-500 text-white rounded-md text-sm font-medium">
+                                    1
+                                </button>
+                                <button className="px-3 py-2 bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white rounded-md text-sm font-medium transition-colors">
+                                    2
+                                </button>
+                                <button className="px-3 py-2 bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white rounded-md text-sm font-medium transition-colors">
+                                    3
+                                </button>
+                                <span className="px-2 text-gray-400">...</span>
+                                <button className="px-3 py-2 bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white rounded-md text-sm font-medium transition-colors">
+                                    25
+                                </button>
+                                <button className="px-3 py-2 bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white rounded-md text-sm font-medium transition-colors">
+                                    →
+                                </button>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ) : (
+                    /* Console Cards Grid */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {consoles.map((console) => (
+                            <div key={console.name} className="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-colors group cursor-pointer">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 ${console.color} rounded-lg flex items-center justify-center text-white text-lg`}>
+                                            {console.icon}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-white font-semibold">{console.name}</h3>
+                                            <p className="text-gray-400 text-sm">{console.company}</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={20} className="text-gray-400 group-hover:text-white transition-colors" />
+                                </div>
+                                <div className="mt-4 flex items-center justify-between">
+                                    <div className="text-2xl font-bold text-green-400">{console.gameCount}</div>
+                                    <div className="text-gray-400 text-sm">Games</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -58,7 +58,7 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="w-full">
-            <h1 className="text-3xl font-bold text-white mb-2">Game Collection Dashboard</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
             <p className="text-gray-400 mb-8">Track and manage your game library</p>
 
             {/* Stats Cards */}
