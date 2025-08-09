@@ -96,3 +96,10 @@ storybook-static/
 
 # Temporary files
 *.tmp
+
+# Reference images - temporary/communication files
+reference/archive/communication/
+reference/temp/
+temp_*.png
+debug_*.png
+*.screenshot.png
