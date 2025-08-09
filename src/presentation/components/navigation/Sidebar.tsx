@@ -1,4 +1,4 @@
-import {Gamepad2, Home, Monitor, Plus, Settings, X} from "lucide-react";
+import {Home, Monitor, Plus, Settings, X, Gamepad2} from "lucide-react";
 import React from "react";
 import {NavLink} from "react-router-dom";
 
@@ -35,29 +35,23 @@ export const Sidebar: React.FC<{
 
             {/* Sidebar */}
             <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-slate-900 border-r border-slate-800 z-50
+        fixed top-16 left-0 h-[calc(100vh-4rem)] w-56 bg-slate-900 border-r border-slate-800 z-40
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
+        lg:translate-x-0 lg:static lg:h-auto lg:z-auto
       `}>
-                {/* Logo Section */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-800">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center">
-                            <Gamepad2 className="text-white" size={24}/>
-                        </div>
-                        <span className="text-xl font-bold text-white">Gametrove</span>
-                    </div>
+                {/* Close button for mobile */}
+                <div className="lg:hidden flex justify-end p-4">
                     <button
                         onClick={onClose}
-                        className="lg:hidden text-gray-400 hover:text-white"
+                        className="text-gray-400 hover:text-white"
                     >
                         <X size={20}/>
                     </button>
                 </div>
 
                 {/* Navigation Items */}
-                <nav className="mt-6">
+                <nav className="mt-4 lg:mt-6">
                     <ul>
                         {navItems.map((item) => (
                             <li key={item.path} className="mb-1 px-2">

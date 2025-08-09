@@ -1,22 +1,33 @@
-import {Menu, Plus, Search, User} from "lucide-react";
+import {Menu, Plus, Search, User, Gamepad2} from "lucide-react";
 import React, {useState} from "react";
 
 export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
     const [searchValue, setSearchValue] = useState('');
 
     return (
-        <header className="bg-slate-900 border-b border-slate-800 px-6 py-4">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800 px-6 py-4">
             <div className="flex items-center justify-between">
-                {/* Left side - Menu button and search */}
-                <div className="flex items-center gap-4 flex-1">
+                {/* Left side - Logo and Menu button */}
+                <div className="flex items-center gap-4">
+                    {/* Logo */}
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
+                            <Gamepad2 className="text-white" size={20}/>
+                        </div>
+                        <span className="text-lg font-bold text-white hidden sm:inline">Gametrove</span>
+                    </div>
+
                     <button
                         onClick={onMenuClick}
                         className="lg:hidden text-gray-400 hover:text-white"
                     >
                         <Menu size={24} />
                     </button>
+                </div>
 
-                    <div className="relative max-w-md flex-1">
+                {/* Center - Search bar */}
+                <div className="flex-1 flex justify-center px-8">
+                    <div className="relative w-full max-w-md">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"

@@ -7,19 +7,19 @@ const DashboardLayout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-slate-950 flex w-full">
-            {/* Sidebar */}
-            <Sidebar
-                isOpen={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-            />
+        <div className="min-h-screen bg-slate-950 w-full">
+            {/* Full-width Header */}
+            <Header onMenuClick={() => setSidebarOpen(true)} />
+            
+            {/* Content Area with Sidebar */}
+            <div className="flex pt-16"> {/* pt-16 accounts for header height */}
+                {/* Sidebar */}
+                <Sidebar
+                    isOpen={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                />
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col">
-                {/* Header */}
-                <Header onMenuClick={() => setSidebarOpen(true)} />
-
-                {/* Page Content */}
+                {/* Main Content Area */}
                 <main className="flex-1 p-6 overflow-auto">
                     <div className="w-full">
                         <Outlet />
