@@ -78,3 +78,6 @@ This is a **Game Collection Management** application called "Gametrove" that all
   - `chore/` for maintenance, cleanup, or non-feature work
   - Branch names should be brief and descriptive, using hyphens to separate words
   - Example: `chore/cleanup-code-styles` or `feature/add-game-search-functionality`
+
+## Merge Guidelines
+- When I do a branch merge, it should squash
