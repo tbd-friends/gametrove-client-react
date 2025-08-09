@@ -17,7 +17,6 @@ export const Sidebar: React.FC<{
         {id: 'dashboard', label: 'Dashboard', icon: <Home size={20}/>, path: '/'},
         {id: 'collection', label: 'My Collection', icon: <Gamepad2 size={20}/>, path: '/collection'},
         {id: 'consoles', label: 'Console Tracker', icon: <Monitor size={20}/>, path: '/consoles'},
-        {id: 'add', label: 'Add Game', icon: <Plus size={20}/>, path: '/add-game'},
         {id: 'settings', label: 'Settings', icon: <Settings size={20}/>, path: '/settings'},
     ];
 

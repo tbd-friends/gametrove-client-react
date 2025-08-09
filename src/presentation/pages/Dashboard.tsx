@@ -79,7 +79,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Recent Games Section */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-6">
+            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-white">Recent Games</h2>
                     <div className="flex items-center gap-4">
@@ -117,25 +117,6 @@ export const Dashboard: React.FC = () => {
                             </div>
                         </div>
                     ))}
-                </div>
-            </div>
-
-            {/* Quick Actions Section */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-                <h2 className="text-xl font-semibold text-white mb-6">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="bg-cyan-500 hover:bg-cyan-600 text-white p-4 rounded-lg flex items-center justify-center gap-3 transition-colors">
-                        <Plus size={24} />
-                        <span className="font-semibold">Add New Game</span>
-                    </button>
-                    <button className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg flex items-center justify-center gap-3 transition-colors">
-                        <Copy size={24} />
-                        <span className="font-semibold">Add Copy</span>
-                    </button>
-                    <button className="bg-slate-600 hover:bg-slate-500 text-white p-4 rounded-lg flex items-center justify-center gap-3 transition-colors">
-                        <Search size={24} />
-                        <span className="font-semibold">Browse Collection</span>
-                    </button>
                 </div>
             </div>
         </div>
