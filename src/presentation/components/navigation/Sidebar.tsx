@@ -1,4 +1,4 @@
-import {Home, Monitor, Plus, Settings, X, Gamepad2} from "lucide-react";
+import {Home, Monitor, Settings, X, Gamepad2} from "lucide-react";
 import React from "react";
 import {NavLink} from "react-router-dom";
 
