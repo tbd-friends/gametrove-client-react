@@ -1,7 +1,10 @@
 import React from "react";
 import { Monitor, Plus, Gamepad2, HardDrive, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Consoles: React.FC = () => {
+    const navigate = useNavigate();
+    
     const consoles = [
         {
             id: 1,
@@ -144,7 +147,10 @@ export const Consoles: React.FC = () => {
                     <h1 className="text-3xl font-bold text-white mb-2">Console Tracker</h1>
                     <p className="text-gray-400">Manage and track your gaming console collection</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors">
+                <button 
+                    onClick={() => navigate('/add-game')}
+                    className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
+                >
                     <Plus size={20} />
                     Add Console
                 </button>

@@ -1,8 +1,10 @@
 import {Menu, Plus, Search, User, Gamepad2} from "lucide-react";
 import React, {useState} from "react";
+import { useNavigate } from "react-router-dom";
 
 export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
     const [searchValue, setSearchValue] = useState('');
+    const navigate = useNavigate();
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800 px-6 py-4">
@@ -46,6 +48,7 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
                 {/* Right side - Add button and profile */}
                 <div className="flex items-center gap-4">
                     <button 
+                        onClick={() => navigate('/add-game')}
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white
                            rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-slate-900
                            transition-colors duration-200"

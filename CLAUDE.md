@@ -72,6 +72,9 @@ This is a **Game Collection Management** application called "Gametrove" that all
 ## Development Workflow Reminders
 - Should not try to `npm run`, I will run the app, just indicate to me that now might be a good time to run
 
+## Large Feature Change Behavior
+- If the problem analysed may create a lot of code, you should not proceed and instead advise that any outstanding changes be committed
+
 ## Branch Naming Conventions
 - When creating a branch, always use a prefix to indicate the purpose:
   - `feature/` for new features or substantial improvements
