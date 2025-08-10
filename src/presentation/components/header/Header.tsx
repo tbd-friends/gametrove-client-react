@@ -1,6 +1,7 @@
-import {Menu, Plus, Search, User, Gamepad2, Heart} from "lucide-react";
+import {Menu, Plus, Search, User, Gamepad2, Heart, LogIn, LogOut} from "lucide-react";
 import React, {useState, useEffect, useRef} from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthService } from "../../contexts/AuthContext";
 
 export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
     const [searchValue, setSearchValue] = useState('');
@@ -9,6 +10,7 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
     const [showDropdown, setShowDropdown] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const authService = useAuthService();
 
     // Mock search results based on the reference design
     const mockSearchResults = [
@@ -185,16 +187,48 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
                     </div>
                 </div>
 
-                {/* Right side - Profile only */}
+                {/* Right side - Authentication */}
                 <div className="flex items-center gap-4">
-                    <button 
-                        className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center
-                           hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900
-                           transition-colors duration-200"
-                        aria-label="User account menu"
-                    >
-                        <User className="text-gray-300" size={20} />
-                    </button>
+                    {authService.isLoading ? (
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+                    ) : authService.isAuthenticated && authService.user ? (
+                        <div className="flex items-center gap-3">
+                            <span className="text-gray-300 text-sm hidden md:block">
+                                {authService.user.name}
+                            </span>
+                            {authService.user.picture ? (
+                                <img 
+                                    src={authService.user.picture} 
+                                    alt="User avatar"
+                                    className="w-8 h-8 rounded-full"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+                                    <User className="text-gray-300" size={16} />
+                                </div>
+                            )}
+                            <button 
+                                onClick={() => authService.logout()}
+                                className="p-2 rounded-md bg-slate-700 hover:bg-slate-600 
+                                         focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900
+                                         transition-colors duration-200"
+                                aria-label="Logout"
+                                title="Logout"
+                            >
+                                <LogOut className="text-gray-300" size={16} />
+                            </button>
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={() => authService.login()}
+                            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 
+                                     text-white rounded-md font-medium transition-colors duration-200
+                                     focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                        >
+                            <LogIn size={16} />
+                            <span className="hidden md:inline">Login</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </header>
