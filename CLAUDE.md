@@ -69,6 +69,60 @@ This is a **Game Collection Management** application called "Gametrove" that all
 - No test framework currently configured
 - Application, domain, and infrastructure layers are currently empty (architecture prepared for future development)
 
+## TypeScript Configuration & Best Practices
+
+This project uses strict TypeScript configuration with modern ES module compatibility:
+
+### Compiler Options in Use
+- `verbatimModuleSyntax: true` - Requires explicit type-only imports
+- `erasableSyntaxOnly: true` - Only allows TypeScript syntax that can be completely removed at compile time
+
+### Import/Export Best Practices
+
+**Type-Only Imports:**
+```typescript
+// ✅ Correct - Use type-only imports for interfaces and type aliases
+import type { GameCollectionSummary } from './Game';
+import type { Platform } from './Platform';
+
+// ✅ Correct - Regular imports for values (functions, classes, const assertions)
+import { Game } from './Game';
+import { GameCondition } from './GameCopy';
+
+// ❌ Incorrect - Regular import for type-only usage
+import { GameCollectionSummary } from './Game';
+```
+
+**Const Assertions Instead of Enums:**
+```typescript
+// ✅ Preferred - Const assertion (erasable, tree-shakable)
+export const UserStatus = {
+  ACTIVE: "active",
+  SUSPENDED: "suspended"
+} as const;
+export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
+
+// ❌ Avoid - TypeScript enums (generate runtime code)
+export enum UserStatus {
+  ACTIVE = "active",
+  SUSPENDED = "suspended"
+}
+```
+
+**Why These Patterns:**
+- **Better bundling** - Type-only imports are completely removed from output
+- **Tree shaking** - Const assertions allow unused values to be eliminated
+- **ES module compatibility** - Works with all modern bundlers and tools
+- **Runtime performance** - No TypeScript-specific runtime overhead
+
+### Validation Patterns
+When validating const assertion values, use `Object.values()`:
+```typescript
+export function isValidUserStatus(status: string): status is UserStatus {
+  return Object.values(UserStatus).includes(status as UserStatus);
+}
+```
+
 ## Development Workflow Reminders
 - Should not try to `npm run`, I will run the app, just indicate to me that now might be a good time to run
 
