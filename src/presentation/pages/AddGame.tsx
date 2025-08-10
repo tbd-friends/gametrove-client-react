@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, ChevronRight, Loader2, FileText, Image, Plus, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Breadcrumb } from "../components/common";
 
 export const AddGame: React.FC = () => {
     const navigate = useNavigate();
@@ -32,7 +33,7 @@ export const AddGame: React.FC = () => {
     ];
 
     // Mock IGDB search function
-    const searchIGDB = async (title: string, platform: string) => {
+    const searchIGDB = async () => {
         const mockResults = [
             {
                 id: 1,
@@ -216,23 +217,22 @@ export const AddGame: React.FC = () => {
         return platform ? platform.label : value;
     };
 
+    const breadcrumbItems = [
+        { label: "My Collection", path: "/collection" },
+        { label: "Add New Game", path: "" }
+    ];
+
     return (
         <div className="w-full max-w-4xl mx-auto">
-            {/* Header with Back Button */}
-            <div className="flex items-center mb-6">
-                <button 
-                    onClick={() => currentStep === 'search' ? navigate(-1) : handleBackToSearch()}
-                    className="mr-4 p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800"
-                    aria-label="Go back"
-                >
-                    <ArrowLeft size={24} />
-                </button>
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-1">Add New Game</h1>
-                    <p className="text-gray-400">
-                        {currentStep === 'search' ? 'Search IGDB for game information' : 'Configure game details'}
-                    </p>
-                </div>
+            {/* Breadcrumb Navigation */}
+            <Breadcrumb items={breadcrumbItems} />
+
+            {/* Header */}
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-white mb-1">Add New Game</h1>
+                <p className="text-gray-400">
+                    {currentStep === 'search' ? 'Search IGDB for game information' : 'Configure game details'}
+                </p>
             </div>
 
             {/* Progress Bar */}

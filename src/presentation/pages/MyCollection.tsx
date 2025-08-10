@@ -1,11 +1,14 @@
-import React, { useState } from "react";
-import { Gamepad2, Copy, Monitor, Heart, Search, List, Grid3X3, Filter, ChevronRight, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Gamepad2, Copy, Monitor, Heart, Search, List, Grid3X3, Filter, ChevronRight, Plus, ArrowLeft } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Breadcrumb } from "../components/common";
+import { consoleNameToSlug, slugToDisplayName } from "../utils/slugUtils";
 
 export const MyCollection: React.FC = () => {
     const [searchValue, setSearchValue] = useState('');
     const [viewMode, setViewMode] = useState<'list' | 'console'>('console');
     const navigate = useNavigate();
+    const { consoleName } = useParams<{ consoleName?: string }>();
 
     const statsCards = [
         {
@@ -193,13 +196,79 @@ export const MyCollection: React.FC = () => {
         }
     ];
 
+    // Find selected console from URL parameter
+    const selectedConsole = consoleName 
+        ? consoles.find(c => consoleNameToSlug(c.name) === consoleName.toLowerCase())
+        : null;
+
+    // Set view mode based on console selection and screen size
+    useEffect(() => {
+        if (selectedConsole) {
+            setViewMode('list');
+        } else if (consoleName) {
+            // Invalid console name in URL, redirect to main collection
+            navigate('/collection', { replace: true });
+        } else {
+            // Force list view on mobile, console view on desktop
+            const isMobile = window.innerWidth < 768; // md breakpoint
+            setViewMode(isMobile ? 'list' : 'console');
+        }
+    }, [selectedConsole, consoleName, navigate]);
+
+    // Listen for window resize to adjust view mode
+    useEffect(() => {
+        const handleResize = () => {
+            if (!selectedConsole) {
+                const isMobile = window.innerWidth < 768;
+                setViewMode(isMobile ? 'list' : 'console');
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [selectedConsole]);
+
+    // Filter games by selected console
+    const filteredGames = selectedConsole 
+        ? games.filter(game => game.platform === selectedConsole.name)
+        : games;
+
+    // Handle console selection
+    const handleConsoleClick = (console: any) => {
+        const consoleSlug = consoleNameToSlug(console.name);
+        navigate(`/collection/console/${consoleSlug}`);
+    };
+
+    // Handle back to console view
+    const handleBackToConsoles = () => {
+        navigate('/collection');
+    };
+
+    // Create breadcrumbs when console is selected
+    const breadcrumbItems = selectedConsole ? [
+        { label: "My Collection", path: "/collection" },
+        { label: selectedConsole.name, path: "" }
+    ] : [];
+
     return (
         <div className="w-full">
+            {/* Breadcrumb Navigation - Show when console is selected */}
+            {selectedConsole && (
+                <Breadcrumb items={breadcrumbItems} />
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">My Collection</h1>
-                    <p className="text-gray-400">Track and manage your game library</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">
+                        {selectedConsole ? selectedConsole.name : 'My Collection'}
+                    </h1>
+                    <p className="text-gray-400">
+                        {selectedConsole 
+                            ? `${filteredGames.length} games on ${selectedConsole.name}`
+                            : 'Track and manage your game library'
+                        }
+                    </p>
                 </div>
                 <button 
                     onClick={() => navigate('/add-game')}
@@ -210,69 +279,66 @@ export const MyCollection: React.FC = () => {
                 </button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {statsCards.map((stat) => (
-                    <div key={stat.title} className="bg-slate-800 rounded-lg p-6 border border-slate-700 relative">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-400 text-sm mb-2">{stat.title}</p>
-                                <p className="text-3xl font-bold text-white">{stat.value}</p>
-                            </div>
-                            <div className="absolute top-4 right-4">
-                                {stat.icon}
+            {/* Stats Cards - Only show when not filtering by console and not on mobile */}
+            {!selectedConsole && (
+                <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {statsCards.map((stat) => (
+                        <div key={stat.title} className="bg-slate-800 rounded-lg p-6 border border-slate-700 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-400 text-sm mb-2">{stat.title}</p>
+                                    <p className="text-3xl font-bold text-white">{stat.value}</p>
+                                </div>
+                                <div className="absolute top-4 right-4">
+                                    {stat.icon}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Game Collection Section */}
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-white">Game Collection</h2>
-                    <div className="flex items-center gap-4">
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center bg-slate-700 rounded-lg p-1">
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors ${
-                                    viewMode === 'list' 
-                                        ? 'bg-cyan-500 text-white' 
-                                        : 'text-gray-300 hover:text-white'
-                                }`}
-                            >
-                                <List size={16} />
-                                List
-                            </button>
-                            <button
-                                onClick={() => setViewMode('console')}
-                                className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors ${
-                                    viewMode === 'console' 
-                                        ? 'bg-cyan-500 text-white' 
-                                        : 'text-gray-300 hover:text-white'
-                                }`}
-                            >
-                                <Grid3X3 size={16} />
-                                Console
+                    <h2 className="text-xl font-semibold text-white">
+                        {selectedConsole ? `${selectedConsole.name} Games` : 'Game Collection'}
+                    </h2>
+                    {!selectedConsole && (
+                        <div className="hidden md:flex items-center gap-4">
+                            {/* View Mode Toggle */}
+                            <div className="flex items-center bg-slate-700 rounded-lg p-1">
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors ${
+                                        viewMode === 'list' 
+                                            ? 'bg-cyan-500 text-white' 
+                                            : 'text-gray-300 hover:text-white'
+                                    }`}
+                                >
+                                    <List size={16} />
+                                    List
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('console')}
+                                    className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors ${
+                                        viewMode === 'console' 
+                                            ? 'bg-cyan-500 text-white' 
+                                            : 'text-gray-300 hover:text-white'
+                                    }`}
+                                >
+                                    <Grid3X3 size={16} />
+                                    Console
+                                </button>
+                            </div>
+
+                            {/* Filter Button */}
+                            <button className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-gray-300 rounded-lg hover:bg-slate-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors">
+                                <Filter size={16} />
+                                Filter
                             </button>
                         </div>
-
-                        {/* Platform Filter */}
-                        <select className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
-                            <option>All Platforms</option>
-                            <option>PlayStation</option>
-                            <option>Xbox</option>
-                            <option>Nintendo</option>
-                            <option>PC</option>
-                        </select>
-
-                        {/* Filter Button */}
-                        <button className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-gray-300 rounded-lg hover:bg-slate-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors">
-                            <Filter size={16} />
-                            Filter
-                        </button>
-                    </div>
+                    )}
                 </div>
 
                 {/* Search Bar */}
@@ -291,7 +357,7 @@ export const MyCollection: React.FC = () => {
                 </div>
 
                 {/* Content Area - List or Console View */}
-                {viewMode === 'list' ? (
+                {(viewMode === 'list' || selectedConsole) ? (
                     /* Games List Table */
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -305,8 +371,19 @@ export const MyCollection: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {games.map((game) => (
-                                    <tr key={game.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
+                                {filteredGames.map((game) => (
+                                    <tr 
+                                        key={game.id} 
+                                        onClick={() => {
+                                            if (selectedConsole) {
+                                                const consoleSlug = consoleNameToSlug(selectedConsole.name);
+                                                navigate(`/collection/console/${consoleSlug}/game/${game.id}`);
+                                            } else {
+                                                navigate(`/collection/game/${game.id}`);
+                                            }
+                                        }}
+                                        className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors cursor-pointer"
+                                    >
                                         <td className="py-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-xl">
@@ -335,7 +412,14 @@ export const MyCollection: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="py-3">
-                                            <button className="text-cyan-400 hover:text-cyan-300 p-1 rounded-md hover:bg-slate-600 transition-colors">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    console.log('Add copy for game:', game.id);
+                                                }}
+                                                className="text-cyan-400 hover:text-cyan-300 p-1 rounded-md hover:bg-slate-600 transition-colors"
+                                                title="Add copy"
+                                            >
                                                 <Plus size={16} />
                                             </button>
                                         </td>
@@ -347,7 +431,8 @@ export const MyCollection: React.FC = () => {
                         {/* Pagination */}
                         <div className="flex items-center justify-between mt-6">
                             <div className="text-gray-400 text-sm">
-                                Showing 1-10 of 247 games
+                                Showing 1-{Math.min(10, filteredGames.length)} of {filteredGames.length} games
+                                {selectedConsole && ` on ${selectedConsole.name}`}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button className="px-3 py-2 bg-cyan-500 text-white rounded-md text-sm font-medium">
@@ -373,7 +458,11 @@ export const MyCollection: React.FC = () => {
                     /* Console Cards Grid */
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {consoles.map((console) => (
-                            <div key={console.name} className="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-colors group cursor-pointer">
+                            <div 
+                                key={console.name} 
+                                onClick={() => handleConsoleClick(console)}
+                                className="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-colors group cursor-pointer"
+                            >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-10 h-10 ${console.color} rounded-lg flex items-center justify-center text-white text-lg`}>
