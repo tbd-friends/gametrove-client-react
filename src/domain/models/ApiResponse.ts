@@ -49,7 +49,6 @@ export interface ApiError {
  * Success response structure
  */
 export interface ApiSuccess<T> {
-  success: true;
   data: T;
   meta?: ResponseMetadata;
 }

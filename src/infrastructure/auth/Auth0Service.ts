@@ -40,7 +40,38 @@ export const createAuth0Service = (
         },
 
         async getAccessToken(): Promise<string> {
-            return await getAccessTokenSilently();
+            try {
+                const audience = import.meta.env.VITE_API_AUDIENCE;
+                const tokenOptions = audience ? { audience } : {};
+                
+                console.log('🎯 Requesting access token with options:', tokenOptions);
+                const token = await getAccessTokenSilently(tokenOptions);
+                console.log('🔑 Auth0 getAccessTokenSilently result:', token ? `${token.substring(0, 20)}...` : 'EMPTY TOKEN');
+                return token;
+            } catch (error) {
+                console.error('❌ Failed to get access token:', error);
+                
+                // If it's a refresh token error, try to get token by forcing a login popup
+                if (error instanceof Error && error.message.includes('Missing Refresh Token')) {
+                    console.log('🔄 Refresh token missing, trying with login_required...');
+                    try {
+                        const audience = import.meta.env.VITE_API_AUDIENCE;
+                        const tokenOptions = audience ? { 
+                            audience,
+                            ignoreCache: true 
+                        } : { ignoreCache: true };
+                        
+                        const token = await getAccessTokenSilently(tokenOptions);
+                        console.log('🔑 Retry successful:', token ? `${token.substring(0, 20)}...` : 'EMPTY TOKEN');
+                        return token;
+                    } catch (retryError) {
+                        console.error('❌ Retry failed:', retryError);
+                        throw new Error('Authentication failed. Please log out and log in again.');
+                    }
+                }
+                
+                throw error;
+            }
         },
 
         async handleCallback(): Promise<void> {
