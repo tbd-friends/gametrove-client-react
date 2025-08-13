@@ -1,64 +1,125 @@
-import React, { useState } from "react";
-import { ArrowLeft, Star, Edit, Trash2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, Star, Edit, Trash2, AlertCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { slugToDisplayName } from "../utils/slugUtils";
+import { createGameApiService } from "../../infrastructure/api";
+import { useAuthService } from "../contexts/AuthContext";
+import type { Game } from "../../domain/models";
+import { mapApiConditionToGameCondition } from "../../domain/models/GameCopy";
 
 export const GameDetail: React.FC = () => {
     const navigate = useNavigate();
     const { gameId, consoleName } = useParams<{ gameId: string; consoleName?: string }>();
     const [activeTab, setActiveTab] = useState<'details' | 'copies'>('details');
+    const [game, setGame] = useState<Game | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const authService = useAuthService();
 
-    // Mock game data - in real app this would come from API based on gameId
-    const game = {
-        id: parseInt(gameId || "1"),
-        title: "Sonic the Hedgehog",
-        platform: "Sega Genesis",
-        publisher: "Sega",
-        developer: "Sonic Team",
-        year: 1991,
-        rating: 4.8,
-        reviewCount: 245,
-        esrb: "E",
-        genres: ["Platformer", "Action", "Adventure"],
-        synopsis: "Sonic the Hedgehog is a platform game developed by Sonic Team and published by Sega for the Sega Genesis console. The game follows Sonic, a blue hedgehog who can run at supersonic speeds, as he attempts to defeat the evil Dr. Robotnik, who has imprisoned animals in robots and stolen the Chaos Emeralds. The gameplay involves collecting rings, avoiding obstacles, and running through various levels at high speed.",
-        coverImage: "🎮",
-        screenshots: [
-            { id: 1, url: "🌴", title: "Green Hill Zone" },
-            { id: 2, url: "❄️", title: "Ice Cap Zone" },
-            { id: 3, url: "🏜️", title: "Desert Zone" },
-            { id: 4, url: "🌊", title: "Labyrinth Zone" }
-        ],
-        collectionStats: {
-            totalCopies: 2,
-            estimatedValue: 85.00,
-            dateAdded: "March 15, 2024",
-            condition: "Very Good"
-        },
-        releaseDate: "June 23, 1991"
-    };
+    // Load game data from API
+    useEffect(() => {
+        async function loadGameData() {
+            if (!gameId || !authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError(null);
+                const gameApiService = createGameApiService(authService);
+                
+                console.log('🎮 Loading game details for ID:', gameId);
+                const gameData = await gameApiService.getGameById(gameId);
+                
+                if (gameData) {
+                    setGame(gameData);
+                    console.log('✅ Game data loaded:', gameData);
+                } else {
+                    setError('Game not found');
+                }
+            } catch (err) {
+                console.error('❌ Failed to load game:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load game');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadGameData();
+    }, [gameId, authService.isAuthenticated, authService.isLoading]);
+
+    // Merge real game data with placeholder data where needed
+    const displayData = React.useMemo(() => {
+        if (!game) return null;
+        
+        // Calculate total estimated value from copies
+        const totalEstimatedValue = game.copies 
+            ? game.copies.reduce((sum, copy) => sum + (copy.estimatedValue || 0), 0)
+            : 0;
+
+        return {
+            // Real data from API
+            id: game.id,
+            title: game.description, // API uses 'description' for game title
+            platform: game.platform.description,
+            publisher: game.publisher?.description || "Unknown Publisher",
+            totalCopies: game.copyCount,
+            estimatedValue: totalEstimatedValue,
+            copies: game.copies || [],
+            
+            // Placeholder data for missing fields
+            developer: "Unknown Developer", // TODO: Add when available in API
+            year: new Date().getFullYear(), // TODO: Parse from API when available
+            rating: 4.8,
+            reviewCount: 245,
+            esrb: "E",
+            genres: ["Adventure"], // TODO: Add when available in API
+            synopsis: "Game details coming soon. This information will be available once we integrate with external game databases.",
+            coverImage: "🎮",
+            screenshots: [
+                { id: 1, url: "🌴", title: "Screenshot 1" },
+                { id: 2, url: "❄️", title: "Screenshot 2" },
+                { id: 3, url: "🏜️", title: "Screenshot 3" },
+                { id: 4, url: "🌊", title: "Screenshot 4" }
+            ],
+            releaseDate: "Release date coming soon",
+            dateAdded: game.copies && game.copies.length > 0 
+                ? new Date(game.copies[0].purchasedDate).toLocaleDateString('en-US', { 
+                    year: 'numeric', month: 'long', day: 'numeric' 
+                })
+                : "Unknown",
+            condition: game.copies && game.copies.length > 0
+                ? mapApiConditionToGameCondition(game.copies[0].condition)
+                : "Unknown"
+        };
+    }, [game]);
 
     // Create breadcrumbs based on routing context
-    const breadcrumbItems = consoleName
-        ? [
-            { label: "My Collection", path: "/collection" },
-            { label: slugToDisplayName(consoleName), path: `/collection/console/${consoleName}` },
-            { label: game.title, path: "" }
-        ]
-        : [
-            { label: "My Collection", path: "/collection" },
-            { label: game.title, path: "" }
-        ];
+    const breadcrumbItems = React.useMemo(() => {
+        const gameTitle = displayData?.title || "Loading...";
+        
+        return consoleName
+            ? [
+                { label: "My Collection", path: "/collection" },
+                { label: slugToDisplayName(consoleName), path: `/collection/console/${consoleName}` },
+                { label: gameTitle, path: "" }
+            ]
+            : [
+                { label: "My Collection", path: "/collection" },
+                { label: gameTitle, path: "" }
+            ];
+    }, [consoleName, displayData?.title]);
 
     const handleEditGame = () => {
         // Navigate to edit game page or open edit modal
-        console.log("Edit game:", game.id);
+        console.log("Edit game:", displayData?.id);
     };
 
     const handleRemoveFromCollection = () => {
         // Show confirmation dialog and remove game
-        if (window.confirm(`Are you sure you want to remove "${game.title}" from your collection?`)) {
-            console.log("Remove game:", game.id);
+        if (window.confirm(`Are you sure you want to remove "${displayData?.title}" from your collection?`)) {
+            console.log("Remove game:", displayData?.id);
             if (consoleName) {
                 navigate(`/collection/console/${consoleName}`);
             } else {
@@ -72,182 +133,243 @@ export const GameDetail: React.FC = () => {
             {/* Breadcrumb Navigation */}
             <Breadcrumb items={breadcrumbItems} />
 
-            {/* Game Header */}
-            <div className="flex items-start gap-6 mb-8">
-                {/* Game Cover */}
-                <div className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-6xl flex-shrink-0 relative">
-                    {game.coverImage}
-                    {/* ESRB Rating Badge */}
-                    <div className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
-                        <span className="text-white text-xs font-bold">ESRB: {game.esrb}</span>
+            {/* Loading State */}
+            {loading && (
+                <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+                    <span className="ml-3 text-gray-400">Loading game details...</span>
+                </div>
+            )}
+
+            {/* Error State */}
+            {error && !loading && (
+                <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6 flex items-center gap-3">
+                    <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
+                    <div>
+                        <h3 className="text-red-400 font-medium">Failed to load game</h3>
+                        <p className="text-gray-300 text-sm mt-1">{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                        >
+                            Retry
+                        </button>
                     </div>
                 </div>
+            )}
 
-                {/* Game Info */}
-                <div className="flex-1">
-                    <h1 className="text-4xl font-bold text-white mb-2">{game.title}</h1>
-                    <p className="text-gray-400 text-lg mb-4">
-                        {game.platform} • {game.publisher} • {game.year}
-                    </p>
+            {/* Game Content - Only show when we have data */}
+            {displayData && !loading && !error && (
+                <>
+                    {/* Game Header */}
+                    <div className="flex items-start gap-6 mb-8">
+                        {/* Game Cover */}
+                        <div className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-6xl flex-shrink-0 relative">
+                            {displayData.coverImage}
+                            {/* ESRB Rating Badge */}
+                            <div className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
+                                <span className="text-white text-xs font-bold">ESRB: {displayData.esrb}</span>
+                            </div>
+                        </div>
+
+                        {/* Game Info */}
+                        <div className="flex-1">
+                            <h1 className="text-4xl font-bold text-white mb-2">{displayData.title}</h1>
+                            <p className="text-gray-400 text-lg mb-4">
+                                {displayData.platform} • {displayData.publisher} • {displayData.year}
+                            </p>
                     
-                    {/* Genre Tags */}
-                    <div className="flex gap-2 mb-4">
-                        {game.genres.map((genre) => (
-                            <span
-                                key={genre}
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    genre === "Platformer" ? "bg-blue-600 text-white" :
-                                    genre === "Action" ? "bg-green-600 text-white" :
-                                    "bg-purple-600 text-white"
+                            {/* Genre Tags */}
+                            <div className="flex gap-2 mb-4">
+                                {displayData.genres.map((genre) => (
+                                    <span
+                                        key={genre}
+                                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                            genre === "Platformer" ? "bg-blue-600 text-white" :
+                                            genre === "Action" ? "bg-green-600 text-white" :
+                                            "bg-purple-600 text-white"
+                                        }`}
+                                    >
+                                        {genre}
+                                    </span>
+                                ))}
+                            </div>
+
+                            {/* Rating and ESRB */}
+                            <div className="flex items-center gap-6 mb-6">
+                                <div className="flex items-center gap-2">
+                                    <Star className="text-yellow-400 fill-current" size={20} />
+                                    <span className="text-white font-semibold">{displayData.rating}</span>
+                                    <span className="text-gray-400">({displayData.reviewCount} reviews)</span>
+                                </div>
+                                <div className="text-gray-400">
+                                    ESRB: <span className="text-white font-medium">{displayData.esrb}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tab Navigation */}
+                    <div className="border-b border-slate-700 mb-8">
+                        <nav className="flex">
+                            <button
+                                onClick={() => setActiveTab('details')}
+                                className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                                    activeTab === 'details'
+                                        ? 'text-cyan-400 border-cyan-400'
+                                        : 'text-gray-400 border-transparent hover:text-gray-300'
                                 }`}
                             >
-                                {genre}
-                            </span>
-                        ))}
+                                Details
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('copies')}
+                                className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                                    activeTab === 'copies'
+                                        ? 'text-cyan-400 border-cyan-400'
+                                        : 'text-gray-400 border-transparent hover:text-gray-300'
+                                }`}
+                            >
+                                Copies ({displayData.totalCopies})
+                            </button>
+                        </nav>
                     </div>
 
-                    {/* Rating and ESRB */}
-                    <div className="flex items-center gap-6 mb-6">
-                        <div className="flex items-center gap-2">
-                            <Star className="text-yellow-400 fill-current" size={20} />
-                            <span className="text-white font-semibold">{game.rating}</span>
-                            <span className="text-gray-400">({game.reviewCount} reviews)</span>
-                        </div>
-                        <div className="text-gray-400">
-                            ESRB: <span className="text-white font-medium">{game.esrb}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tab Navigation */}
-            <div className="border-b border-slate-700 mb-8">
-                <nav className="flex">
-                    <button
-                        onClick={() => setActiveTab('details')}
-                        className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-                            activeTab === 'details'
-                                ? 'text-cyan-400 border-cyan-400'
-                                : 'text-gray-400 border-transparent hover:text-gray-300'
-                        }`}
-                    >
-                        Details
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('copies')}
-                        className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-                            activeTab === 'copies'
-                                ? 'text-cyan-400 border-cyan-400'
-                                : 'text-gray-400 border-transparent hover:text-gray-300'
-                        }`}
-                    >
-                        Copies ({game.collectionStats.totalCopies})
-                    </button>
-                </nav>
-            </div>
-
-            {/* Tab Content */}
-            {activeTab === 'details' && (
-                <>
-                    {/* Synopsis */}
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-white mb-4">Synopsis</h2>
-                        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                            <p className="text-gray-300 leading-relaxed">{game.synopsis}</p>
-                        </div>
-                    </div>
-
-                    {/* Game Information & Collection Stats */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Game Information */}
-                        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-4">Game Information</h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Developer:</span>
-                                    <span className="text-white">{game.developer}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Publisher:</span>
-                                    <span className="text-white">{game.publisher}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Release Date:</span>
-                                    <span className="text-white">{game.releaseDate}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Platform:</span>
-                                    <span className="text-white">{game.platform}</span>
+                    {/* Tab Content */}
+                    {activeTab === 'details' && (
+                        <>
+                            {/* Synopsis */}
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-bold text-white mb-4">Synopsis</h2>
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                    <p className="text-gray-300 leading-relaxed">{displayData.synopsis}</p>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Collection Stats */}
-                        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-4">Collection Stats</h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Total Copies:</span>
-                                    <span className="text-green-400 font-semibold">{game.collectionStats.totalCopies}</span>
+                            {/* Game Information & Collection Stats */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                {/* Game Information */}
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                    <h3 className="text-xl font-semibold text-white mb-4">Game Information</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Developer:</span>
+                                            <span className="text-white">{displayData.developer}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Publisher:</span>
+                                            <span className="text-white">{displayData.publisher}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Release Date:</span>
+                                            <span className="text-white">{displayData.releaseDate}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Platform:</span>
+                                            <span className="text-white">{displayData.platform}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Estimated Value:</span>
-                                    <span className="text-green-400 font-semibold">${game.collectionStats.estimatedValue.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Date Added:</span>
-                                    <span className="text-white">{game.collectionStats.dateAdded}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Condition:</span>
-                                    <span className="text-white">{game.collectionStats.condition}</span>
+
+                                {/* Collection Stats */}
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                    <h3 className="text-xl font-semibold text-white mb-4">Collection Stats</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Total Copies:</span>
+                                            <span className="text-green-400 font-semibold">{displayData.totalCopies}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Estimated Value:</span>
+                                            <span className="text-green-400 font-semibold">${displayData.estimatedValue.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Date Added:</span>
+                                            <span className="text-white">{displayData.dateAdded}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Overall Condition:</span>
+                                            <span className="text-white">{displayData.condition}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Screenshots */}
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-white mb-4">Screenshots</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {game.screenshots.map((screenshot) => (
-                                <div
-                                    key={screenshot.id}
-                                    className="aspect-video bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-4xl hover:bg-slate-700 transition-colors cursor-pointer"
-                                    title={screenshot.title}
-                                >
-                                    {screenshot.url}
+                            {/* Screenshots */}
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-bold text-white mb-4">Screenshots</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {displayData.screenshots.map((screenshot) => (
+                                        <div
+                                            key={screenshot.id}
+                                            className="aspect-video bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-4xl hover:bg-slate-700 transition-colors cursor-pointer"
+                                            title={screenshot.title}
+                                        >
+                                            {screenshot.url}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
                 </>
             )}
 
-            {activeTab === 'copies' && (
-                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
-                    <h3 className="text-xl font-semibold text-white mb-4">Your Copies</h3>
-                    <div className="space-y-4">
-                        {Array.from({ length: game.collectionStats.totalCopies }, (_, index) => (
-                            <div key={index} className="bg-slate-700 rounded-lg p-4">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <h4 className="text-white font-medium">Copy #{index + 1}</h4>
-                                        <p className="text-gray-400 text-sm">Condition: Very Good • Complete in Box</p>
+                    {activeTab === 'copies' && (
+                        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
+                            <h3 className="text-xl font-semibold text-white mb-4">Your Copies</h3>
+                            <div className="space-y-4">
+                                {displayData.copies.length > 0 ? displayData.copies.map((copy, index) => (
+                                    <div key={copy.id} className="bg-slate-700 rounded-lg p-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <h4 className="text-white font-medium">{copy.description}</h4>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        mapApiConditionToGameCondition(copy.condition) === 'Complete' ? 'bg-green-600 text-white' :
+                                                        mapApiConditionToGameCondition(copy.condition) === 'New' ? 'bg-blue-600 text-white' :
+                                                        mapApiConditionToGameCondition(copy.condition) === 'Loose' ? 'bg-yellow-600 text-black' :
+                                                        'bg-gray-600 text-white'
+                                                    }`}>
+                                                        {mapApiConditionToGameCondition(copy.condition)}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <p className="text-gray-400">Purchased:</p>
+                                                        <p className="text-gray-300">
+                                                            {new Date(copy.purchasedDate).toLocaleDateString('en-US', {
+                                                                year: 'numeric', month: 'short', day: 'numeric'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-400">UPC:</p>
+                                                        <p className="text-gray-300">{copy.upc || 'Unknown'}</p>
+                                                    </div>
+                                                    {copy.cost && (
+                                                        <div>
+                                                            <p className="text-gray-400">Purchase Price:</p>
+                                                            <p className="text-gray-300">${copy.cost.toFixed(2)}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-green-400 font-semibold text-lg">${copy.estimatedValue?.toFixed(2) || '0.00'}</p>
+                                                <p className="text-gray-400 text-sm">Current Value</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-green-400 font-semibold">${(game.collectionStats.estimatedValue / game.collectionStats.totalCopies).toFixed(2)}</p>
-                                        <p className="text-gray-400 text-sm">Estimated Value</p>
+                                )) : (
+                                    <div className="text-center text-gray-400 py-8">
+                                        <p>No copies found in your collection.</p>
                                     </div>
-                                </div>
+                                )}
                             </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                        </div>
+                    )}
 
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-between pt-6 border-t border-slate-700">
+                    {/* Bottom Actions */}
+                    <div className="flex items-center justify-between pt-6 border-t border-slate-700">
                 <button
                     onClick={() => {
                         if (consoleName) {
@@ -277,8 +399,10 @@ export const GameDetail: React.FC = () => {
                         <Trash2 size={16} />
                         Remove from Collection
                     </button>
-                </div>
-            </div>
+                    </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

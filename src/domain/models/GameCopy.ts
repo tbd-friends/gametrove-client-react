@@ -45,12 +45,45 @@ export interface GameCopy {
 export const GameCondition = {
   NEW: "New",
   COMPLETE_IN_BOX: "Complete In Box",
+  COMPLETE: "Complete", // API compatibility
   CART_ONLY: "Cart Only", 
   LOOSE: "Loose",
   POOR: "Poor"
 } as const;
 
 export type GameCondition = typeof GameCondition[keyof typeof GameCondition];
+
+/**
+ * Maps API condition strings to our standardized conditions
+ */
+export function mapApiConditionToGameCondition(apiCondition: string): GameCondition {
+  // Direct mapping for exact matches
+  if (Object.values(GameCondition).includes(apiCondition as GameCondition)) {
+    return apiCondition as GameCondition;
+  }
+  
+  // Fallback mappings for API variations
+  switch (apiCondition.toLowerCase()) {
+    case 'complete':
+    case 'complete in box':
+    case 'cib':
+      return GameCondition.COMPLETE;
+    case 'new':
+    case 'sealed':
+    case 'mint':
+      return GameCondition.NEW;
+    case 'cart only':
+    case 'cartridge only':
+    case 'loose':
+      return GameCondition.LOOSE;
+    case 'poor':
+    case 'damaged':
+      return GameCondition.POOR;
+    default:
+      // Default to COMPLETE for unknown conditions
+      return GameCondition.COMPLETE;
+  }
+}
 
 /**
  * Pricing information for a game across different conditions

@@ -1,0 +1,29 @@
+{
+  "copies": [
+    {
+      "cost": null,
+      "purchasedDate": "2021-08-15T17:52:19.703",
+      "updatedDate": "2021-08-15T17:52:39.537",
+      "estimatedValue": 40.00,
+      "condition": "Complete",
+      "upc": "014633073553",
+      "id": "906d4c8f-7827-435b-81db-fda79b6a7cdd",
+      "url": "copies/906d4c8f-7827-435b-81db-fda79b6a7cdd",
+      "description": "Need for Speed"
+    }
+  ],
+  "platform": {
+    "id": "3650a77b-0305-40ce-9551-998749bd2cb2",
+    "url": "platforms/3650a77b-0305-40ce-9551-998749bd2cb2",
+    "description": "3DO"
+  },
+  "publisher": {
+    "id": "59f588f3-af02-4be0-9127-4129f8321dfd",
+    "url": "publishers/59f588f3-af02-4be0-9127-4129f8321dfd",
+    "description": "Electronic Arts"
+  },
+  "copyCount": 1,
+  "id": "3699023d-fb4d-4a33-bf15-be413f5f6850",
+  "url": "games/3699023d-fb4d-4a33-bf15-be413f5f6850",
+  "description": "The Need for Speed"
+}
