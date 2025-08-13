@@ -19,11 +19,23 @@ interface Console {
   icon: string;
 }
 
+const COLLECTION_VIEW_KEY = 'gametrove_collection_view_mode';
+
 export const MyCollection: React.FC = () => {
     const [searchValue, setSearchValue] = useState('');
-    const [viewMode, setViewMode] = useState<'list' | 'console'>('console');
+    // Get view mode from localStorage, default to 'list'
+    const [viewMode, setViewMode] = useState<'list' | 'console'>(() => {
+        const saved = localStorage.getItem(COLLECTION_VIEW_KEY);
+        return (saved === 'console' || saved === 'list') ? saved : 'list';
+    });
     const navigate = useNavigate();
     const { consoleName } = useParams<{ consoleName?: string }>();
+
+    // Custom view mode setter that saves to localStorage
+    const updateViewMode = React.useCallback((mode: 'list' | 'console') => {
+        setViewMode(mode);
+        localStorage.setItem(COLLECTION_VIEW_KEY, mode);
+    }, []);
 
     // Custom hooks
     const pagination = usePagination({ initialPageSize: 20 });
@@ -113,14 +125,18 @@ export const MyCollection: React.FC = () => {
     // Set view mode based on console selection and screen size
     useEffect(() => {
         if (selectedConsole) {
+            // Always use list view when viewing a specific console
             setViewMode('list');
         } else if (consoleName) {
             // Invalid console name in URL, redirect to main collection
             navigate('/collection', { replace: true });
         } else {
-            // Force list view on mobile, console view on desktop
+            // For main collection page, force list view on mobile but respect saved preference on desktop
             const isMobile = window.innerWidth < 768;
-            setViewMode(isMobile ? 'list' : 'console');
+            if (isMobile) {
+                setViewMode('list');
+            }
+            // On desktop, keep the saved preference (already loaded from localStorage)
         }
     }, [selectedConsole, consoleName, navigate]);
 
@@ -134,7 +150,15 @@ export const MyCollection: React.FC = () => {
         const handleResize = () => {
             if (!selectedConsole) {
                 const isMobile = window.innerWidth < 768;
-                setViewMode(isMobile ? 'list' : 'console');
+                if (isMobile) {
+                    // Force list view on mobile
+                    setViewMode('list');
+                } else {
+                    // On desktop resize, restore saved preference
+                    const saved = localStorage.getItem(COLLECTION_VIEW_KEY);
+                    const preferredMode = (saved === 'console' || saved === 'list') ? saved : 'list';
+                    setViewMode(preferredMode);
+                }
             }
         };
 
@@ -167,7 +191,7 @@ export const MyCollection: React.FC = () => {
                 filteredGamesCount={filteredGames.length}
                 viewMode={viewMode}
                 searchValue={searchValue}
-                onViewModeChange={setViewMode}
+                onViewModeChange={updateViewMode}
                 onSearchChange={setSearchValue}
             />
 
