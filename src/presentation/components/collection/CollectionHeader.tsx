@@ -50,8 +50,8 @@ export const CollectionHeader: React.FC<CollectionHeaderProps> = ({
       </div>
 
       {/* Collection Section Header */}
-      <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-semibold text-white">
             {selectedConsole ? `${selectedConsole.name} Games` : 'Game Collection'}
           </h2>
@@ -93,14 +93,14 @@ export const CollectionHeader: React.FC<CollectionHeaderProps> = ({
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-6">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
             placeholder="Search your game collection..."
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg
+            className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg
                        text-white placeholder-gray-400 focus:outline-none focus:ring-2 
                        focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200"
             aria-label="Search game collection"

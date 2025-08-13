@@ -171,7 +171,6 @@ export const MyCollection: React.FC = () => {
                 onSearchChange={setSearchValue}
             />
 
-
             {/* Error State */}
             {error && (
                 <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6 flex items-center gap-3">
@@ -199,7 +198,7 @@ export const MyCollection: React.FC = () => {
 
             {/* Content Area - List or Console View */}
             {!loading && !error && (
-                <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+                <div className="mt-6 bg-slate-800 rounded-lg border border-slate-700 p-6">
                     {(viewMode === 'list' || selectedConsole) ? (
                         <>
                             {/* Games List Table */}

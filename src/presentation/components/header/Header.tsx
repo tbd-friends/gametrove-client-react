@@ -95,7 +95,7 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
     }, []);
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800 px-6 py-4">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800 px-6 py-2">
             <div className="flex items-center justify-between">
                 {/* Left side - Logo and Menu button */}
                 <div className="flex items-center gap-4">
@@ -125,7 +125,7 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
                             placeholder="Search games or consoles..."
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg
+                            className="w-full pl-10 pr-4 py-1.5 bg-slate-800 border border-slate-700 rounded-lg
                        text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500
                        transition-colors duration-200"
                             aria-label="Search games and consoles"
