@@ -105,7 +105,7 @@ export function useGamesData({
           search: searchTerm
         };
 
-        console.log('📋 Making paginated API request:', `/api/games?page=${currentPage}&limit=${pageSize}${searchTerm ? `&search=${searchTerm}` : ''}`);
+        console.log('📋 Making paginated API request with params:', paginationParams);
         const result = await gameApiService.getAllGames(paginationParams);
 
         if ('games' in result) {

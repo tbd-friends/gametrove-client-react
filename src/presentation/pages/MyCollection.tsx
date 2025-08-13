@@ -202,7 +202,7 @@ export const MyCollection: React.FC = () => {
                     {(viewMode === 'list' || selectedConsole) ? (
                         <>
                             {/* Games List Table */}
-                            <GamesTable games={filteredGames} selectedConsole={selectedConsole} />
+                            <GamesTable games={filteredGames} selectedConsole={selectedConsole} searchValue={searchValue} />
 
                             {/* Pagination - Only show when pagination is enabled */}
                             {paginationEnabled && (

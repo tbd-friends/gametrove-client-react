@@ -101,14 +101,16 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 const response = await makeAuthenticatedRequest<PaginatedResponse<Game>>(url);
 
-                if (response.meta) {
+                // Handle empty results case
+                if (response.data && Array.isArray(response.data)) {
                     if (pagination) {
+                        // Return paginated result, even if data is empty
                         return {
                             games: response.data,
-                            total: response.meta.total || 0,
+                            total: response.meta?.total || 0,
                             page: pagination.page,
-                            totalPages: response.meta.totalPages || Math.ceil((response.meta.total || 0) / pagination.limit),
-                            hasMore: response.meta.hasMore || false
+                            totalPages: response.meta?.totalPages || (response.data.length === 0 ? 0 : 1),
+                            hasMore: response.meta?.hasMore || false
                         };
                     }
 
@@ -272,17 +274,17 @@ export function createGameApiServiceWithConfig(
 
                 if ('success' in response && response.success) {
                     // Check if this is a paginated response
-                    if (response.meta && pagination) {
+                    if (pagination) {
                         return {
-                            games: response.data,
-                            total: response.meta.total || 0,
+                            games: response.data || [],
+                            total: response.meta?.total || 0,
                             page: pagination.page,
-                            totalPages: response.meta.totalPages || Math.ceil((response.meta.total || 0) / pagination.limit),
-                            hasMore: response.meta.hasMore || false
+                            totalPages: response.meta?.totalPages || (response.data?.length === 0 ? 0 : 1),
+                            hasMore: response.meta?.hasMore || false
                         };
                     }
 
-                    return response.data;
+                    return response.data || [];
                 }
 
                 if (Array.isArray(response)) {

@@ -11,11 +11,13 @@ interface Console {
 interface GamesTableProps {
   games: Game[];
   selectedConsole?: Console | null;
+  searchValue?: string;
 }
 
 export const GamesTable: React.FC<GamesTableProps> = ({
   games,
-  selectedConsole
+  selectedConsole,
+  searchValue
 }) => {
   const navigate = useNavigate();
 
@@ -41,7 +43,9 @@ export const GamesTable: React.FC<GamesTableProps> = ({
                   <p className="text-sm">
                     {selectedConsole
                       ? `No games found for ${selectedConsole.name}`
-                      : "Your collection is empty"
+                      : searchValue && searchValue.trim()
+                        ? `No games found for "${searchValue}"`
+                        : "Your collection is empty"
                     }
                   </p>
                 </div>
