@@ -10,6 +10,7 @@ export * from './User';
 
 // API Response Models  
 export * from './ApiResponse';
+export * from './Stats';
 
 // Utility Functions
 export * from './validators';

@@ -5,7 +5,6 @@ import { Breadcrumb } from "../components/common";
 import { consoleNameToSlug } from "../utils/slugUtils";
 import { usePagination, useGamesData } from "../hooks";
 import {
-  CollectionStats,
   CollectionHeader,
   GamesTable,
   ConsolesGrid,
@@ -45,7 +44,7 @@ export const MyCollection: React.FC = () => {
                 enabled: paginationEnabled
             });
         }
-    }, [paginationEnabled, totalPages, totalGames, pagination]);
+    }, [paginationEnabled, totalPages, totalGames, pagination.setPaginationData]);
 
     // Calculate console data from real games
     const platformColorMap: Record<string, string> = {
@@ -104,7 +103,7 @@ export const MyCollection: React.FC = () => {
             filtered = filtered.filter(game =>
                 game.description.toLowerCase().includes(searchLower) ||
                 game.platform.description.toLowerCase().includes(searchLower) ||
-                game.publisher.description.toLowerCase().includes(searchLower)
+                game.publisher?.description.toLowerCase().includes(searchLower)
             );
         }
 
@@ -128,7 +127,7 @@ export const MyCollection: React.FC = () => {
     // Reset pagination when switching views or search changes
     useEffect(() => {
         pagination.resetToFirstPage();
-    }, [viewMode, searchValue, pagination]);
+    }, [viewMode, searchValue, pagination.resetToFirstPage]);
 
     // Listen for window resize to adjust view mode
     useEffect(() => {
@@ -172,15 +171,6 @@ export const MyCollection: React.FC = () => {
                 onSearchChange={setSearchValue}
             />
 
-            {/* Stats Cards - Only show when not filtering by console and not on mobile */}
-            {!selectedConsole && (
-                <CollectionStats
-                    games={games}
-                    loading={loading}
-                    paginationEnabled={paginationEnabled}
-                    totalGames={totalGames}
-                />
-            )}
 
             {/* Error State */}
             {error && (

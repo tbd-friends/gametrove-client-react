@@ -80,7 +80,7 @@ export function useGamesData({
     }
 
     loadGamesForConsoleView();
-  }, [authService, authService.isAuthenticated, authService.isLoading, viewMode, hasSelectedConsole, allGamesCache.length]);
+  }, [authService.isAuthenticated, authService.isLoading, viewMode, hasSelectedConsole, allGamesCache.length]);
 
   // Effect for LIST VIEW - Make paginated API calls
   useEffect(() => {
@@ -128,7 +128,7 @@ export function useGamesData({
     }
 
     loadGamesForListView();
-  }, [viewMode, currentPage, pageSize, hasSelectedConsole, searchTerm, authService]);
+  }, [viewMode, currentPage, pageSize, hasSelectedConsole, searchTerm, authService.isAuthenticated]);
 
   return {
     games,
