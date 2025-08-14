@@ -14,6 +14,7 @@ export interface UseGamesDataProps {
 export interface UseGamesDataReturn {
   games: Game[];
   loading: boolean;
+  paginationLoading: boolean;
   error: string | null;
   totalPages: number;
   totalGames: number;
@@ -31,6 +32,7 @@ export function useGamesData({
   const [games, setGames] = useState<Game[]>([]);
   const [allGamesCache, setAllGamesCache] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [totalGames, setTotalGames] = useState(0);
@@ -95,7 +97,13 @@ export function useGamesData({
       }
 
       try {
-        setLoading(true);
+        // Use different loading states: full loading for first load, pagination loading for page changes
+        const isFirstLoad = games.length === 0;
+        if (isFirstLoad) {
+          setLoading(true);
+        } else {
+          setPaginationLoading(true);
+        }
         setError(null);
         const gameApiService = createGameApiService(authService);
         
@@ -124,6 +132,7 @@ export function useGamesData({
         setError(err instanceof Error ? err.message : 'Failed to load games');
       } finally {
         setLoading(false);
+        setPaginationLoading(false);
       }
     }
 
@@ -133,6 +142,7 @@ export function useGamesData({
   return {
     games,
     loading,
+    paginationLoading,
     error,
     totalPages,
     totalGames,

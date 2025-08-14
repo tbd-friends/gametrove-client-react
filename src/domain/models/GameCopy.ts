@@ -63,7 +63,7 @@ export function mapApiConditionToGameCondition(apiCondition: string): GameCondit
   }
   
   // Fallback mappings for API variations
-  switch (apiCondition.toLowerCase()) {
+  switch (apiCondition?.toLowerCase()) {
     case 'complete':
     case 'complete in box':
     case 'cib':

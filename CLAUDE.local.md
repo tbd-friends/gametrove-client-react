@@ -1,0 +1,1 @@
+- You should *NEVER* try to commit code without me asking, you can express a benefit of making a commit especially if I've made more than a single change
