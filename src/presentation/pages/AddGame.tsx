@@ -2,35 +2,18 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, ChevronRight, Loader2, FileText, Image, Plus, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
+import { PlatformCombobox } from "../components/forms/PlatformCombobox";
+import type { Platform } from "../../domain/models";
 
 export const AddGame: React.FC = () => {
     const navigate = useNavigate();
     const [gameTitle, setGameTitle] = useState("");
-    const [platform, setPlatform] = useState("");
+    const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [selectedGame, setSelectedGame] = useState<any>(null);
     const [isSearching, setIsSearching] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [currentStep, setCurrentStep] = useState<'search' | 'configure'>('search');
-
-    const platforms = [
-        { value: "", label: "Select Platform" },
-        { value: "playstation-5", label: "PlayStation 5" },
-        { value: "xbox-series-x", label: "Xbox Series X/S" },
-        { value: "nintendo-switch", label: "Nintendo Switch" },
-        { value: "pc", label: "PC" },
-        { value: "playstation-4", label: "PlayStation 4" },
-        { value: "xbox-one", label: "Xbox One" },
-        { value: "nintendo-3ds", label: "Nintendo 3DS" },
-        { value: "steam-deck", label: "Steam Deck" },
-        { value: "playstation-3", label: "PlayStation 3" },
-        { value: "xbox-360", label: "Xbox 360" },
-        { value: "nintendo-wii", label: "Nintendo Wii" },
-        { value: "game-boy-advance", label: "Game Boy Advance" },
-        { value: "playstation-2", label: "PlayStation 2" },
-        { value: "sega-genesis", label: "Sega Genesis" },
-        { value: "super-nintendo", label: "Super Nintendo" }
-    ];
 
     // Mock IGDB search function
     const searchIGDB = async () => {
@@ -143,7 +126,7 @@ export const AddGame: React.FC = () => {
     // Auto-search when both fields are filled
     useEffect(() => {
         const debounceTimer = setTimeout(() => {
-            if (gameTitle.trim() && platform) {
+            if (gameTitle.trim() && selectedPlatform) {
                 performSearch();
             } else {
                 setSearchResults([]);
@@ -153,7 +136,7 @@ export const AddGame: React.FC = () => {
         }, 500);
 
         return () => clearTimeout(debounceTimer);
-    }, [gameTitle, platform]);
+    }, [gameTitle, selectedPlatform]);
 
     const performSearch = async () => {
         setIsSearching(true);
@@ -178,7 +161,7 @@ export const AddGame: React.FC = () => {
     };
 
     const canContinue = currentStep === 'search' 
-        ? (selectedGame !== null && gameTitle.trim() && platform)
+        ? (selectedGame !== null && gameTitle.trim() && selectedPlatform)
         : selectedGame !== null;
 
     const handleContinue = () => {
@@ -192,7 +175,7 @@ export const AddGame: React.FC = () => {
         const manualGame = {
             id: 'manual',
             title: gameTitle,
-            platform: getPlatformLabel(platform),
+            platform: selectedPlatform ? `${selectedPlatform.description} (${selectedPlatform.manufacturer})` : 'Unknown Platform',
             year: new Date().getFullYear(),
             genres: [],
             coverImage: "🎮"
@@ -212,10 +195,6 @@ export const AddGame: React.FC = () => {
         navigate('/collection');
     };
 
-    const getPlatformLabel = (value: string) => {
-        const platform = platforms.find(p => p.value === value);
-        return platform ? platform.label : value;
-    };
 
     const breadcrumbItems = [
         { label: "My Collection", path: "/collection" },
@@ -272,26 +251,16 @@ export const AddGame: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Platform Dropdown */}
+                                {/* Platform Typeahead */}
                                 <div>
-                                    <label htmlFor="platform" className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
                                         Platform <span className="text-red-400">*</span>
                                     </label>
-                                    <select
-                                        id="platform"
-                                        value={platform}
-                                        onChange={(e) => setPlatform(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg
-                                                   text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 
-                                                   focus:border-cyan-500 transition-colors cursor-pointer"
-                                        aria-required="true"
-                                    >
-                                        {platforms.map((p) => (
-                                            <option key={p.value} value={p.value} disabled={p.value === ""}>
-                                                {p.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <PlatformCombobox
+                                        value={selectedPlatform}
+                                        onChange={setSelectedPlatform}
+                                        placeholder="Search for a platform..."
+                                    />
                                 </div>
                             </div>
 
@@ -381,9 +350,9 @@ export const AddGame: React.FC = () => {
                             {/* Continue without linking */}
                             <button
                                 onClick={handleContinueWithoutLinking}
-                                disabled={!gameTitle.trim() || !platform}
+                                disabled={!gameTitle.trim() || !selectedPlatform}
                                 className={`text-sm transition-colors ${
-                                    gameTitle.trim() && platform
+                                    gameTitle.trim() && selectedPlatform
                                         ? 'text-gray-400 hover:text-white cursor-pointer'
                                         : 'text-gray-600 cursor-not-allowed'
                                 }`}

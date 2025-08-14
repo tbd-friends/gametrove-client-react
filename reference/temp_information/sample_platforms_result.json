@@ -1,0 +1,242 @@
+[
+  {
+    "manufacturer": "Nintendo",
+    "id": "7c1f7425-1baa-4521-8755-a5a2593b8d79",
+    "url": "platforms/7c1f7425-1baa-4521-8755-a5a2593b8d79",
+    "description": "Super Nintendo"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "5d4013b2-8908-4a0e-9ff0-7f7e35b4143b",
+    "url": "platforms/5d4013b2-8908-4a0e-9ff0-7f7e35b4143b",
+    "description": "NES"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "cd643d84-b4b8-4329-b0fe-94f15ad1fdfe",
+    "url": "platforms/cd643d84-b4b8-4329-b0fe-94f15ad1fdfe",
+    "description": "Genesis"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "f48d3313-3a83-4d22-b8b3-230327e841de",
+    "url": "platforms/f48d3313-3a83-4d22-b8b3-230327e841de",
+    "description": "Master System"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "020de380-b507-45af-b258-b65da0262f79",
+    "url": "platforms/020de380-b507-45af-b258-b65da0262f79",
+    "description": "Playstation"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "164f2020-fbb9-41a8-af31-57e3971c6518",
+    "url": "platforms/164f2020-fbb9-41a8-af31-57e3971c6518",
+    "description": "Playstation 2"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "4a1b3bd6-f4a4-46d6-84bf-c3a38262665c",
+    "url": "platforms/4a1b3bd6-f4a4-46d6-84bf-c3a38262665c",
+    "description": "Playstation 3"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "576bc85f-bab1-40b9-add2-b41f625aca9c",
+    "url": "platforms/576bc85f-bab1-40b9-add2-b41f625aca9c",
+    "description": "Playstation 4"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "40f20b2c-df60-4b45-ae34-d7b3a4a29428",
+    "url": "platforms/40f20b2c-df60-4b45-ae34-d7b3a4a29428",
+    "description": "Playstation 5"
+  },
+  {
+    "manufacturer": "Atari",
+    "id": "27f99844-4225-4134-b835-fb0dd0b91185",
+    "url": "platforms/27f99844-4225-4134-b835-fb0dd0b91185",
+    "description": "Jaguar"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "ad2ba0bb-e6fc-4920-83b3-df32a45e2332",
+    "url": "platforms/ad2ba0bb-e6fc-4920-83b3-df32a45e2332",
+    "description": "Wii"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "674f4191-3492-43c9-b8a6-7c75b096fd5b",
+    "url": "platforms/674f4191-3492-43c9-b8a6-7c75b096fd5b",
+    "description": "Wii U"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "c65523d0-7f4e-4425-a1a9-347be3a40b1b",
+    "url": "platforms/c65523d0-7f4e-4425-a1a9-347be3a40b1b",
+    "description": "Switch"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "26b6df75-01b7-47f8-8c5e-cfb05afaa961",
+    "url": "platforms/26b6df75-01b7-47f8-8c5e-cfb05afaa961",
+    "description": "Gamecube"
+  },
+  {
+    "manufacturer": "Microsoft",
+    "id": "a5baebd9-5a84-4807-a8d6-b8ae2bb71956",
+    "url": "platforms/a5baebd9-5a84-4807-a8d6-b8ae2bb71956",
+    "description": "XBox"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "8dd57ee6-a73c-49b6-a180-c127ddafab61",
+    "url": "platforms/8dd57ee6-a73c-49b6-a180-c127ddafab61",
+    "description": "Gamegear"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "aeab1bba-e123-429e-a1fb-c526fc05d431",
+    "url": "platforms/aeab1bba-e123-429e-a1fb-c526fc05d431",
+    "description": "Saturn"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "b4e9272f-75ba-4551-9275-6d25837c58e6",
+    "url": "platforms/b4e9272f-75ba-4551-9275-6d25837c58e6",
+    "description": "Dreamcast"
+  },
+  {
+    "manufacturer": "Microsoft",
+    "id": "7ad338dc-63f4-487d-b2b2-e0fc040a123d",
+    "url": "platforms/7ad338dc-63f4-487d-b2b2-e0fc040a123d",
+    "description": "XBox 360"
+  },
+  {
+    "manufacturer": "Microsoft",
+    "id": "c6fa9469-4dff-4d06-8f43-1233dad3d37e",
+    "url": "platforms/c6fa9469-4dff-4d06-8f43-1233dad3d37e",
+    "description": "XBox One"
+  },
+  {
+    "manufacturer": "Microsoft",
+    "id": "3fc27362-47bc-4ab1-ac02-7520de66e948",
+    "url": "platforms/3fc27362-47bc-4ab1-ac02-7520de66e948",
+    "description": "XBox Series"
+  },
+  {
+    "manufacturer": "NEC",
+    "id": "801e3cc5-127e-493c-b596-8ce7984ca6e2",
+    "url": "platforms/801e3cc5-127e-493c-b596-8ce7984ca6e2",
+    "description": "PC-Engine"
+  },
+  {
+    "manufacturer": "NEC",
+    "id": "05dbd9da-510c-4a37-a55f-f6129f61ba0c",
+    "url": "platforms/05dbd9da-510c-4a37-a55f-f6129f61ba0c",
+    "description": "Turbografx-16"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "08004da0-335c-4811-87e5-cb14de4396e6",
+    "url": "platforms/08004da0-335c-4811-87e5-cb14de4396e6",
+    "description": "PSP"
+  },
+  {
+    "manufacturer": "Sony",
+    "id": "a16654a7-927a-423c-8439-98d8d38093b4",
+    "url": "platforms/a16654a7-927a-423c-8439-98d8d38093b4",
+    "description": "PS Vita"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "19bf9c00-d454-4ca8-a3c8-de8c77718eb4",
+    "url": "platforms/19bf9c00-d454-4ca8-a3c8-de8c77718eb4",
+    "description": "Gameboy Color"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "9538bc5c-303e-474f-a4cb-fec495b5414c",
+    "url": "platforms/9538bc5c-303e-474f-a4cb-fec495b5414c",
+    "description": "Gameboy Advance"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "8cbcb135-10e8-4c10-b04b-e37f0ba4c44d",
+    "url": "platforms/8cbcb135-10e8-4c10-b04b-e37f0ba4c44d",
+    "description": "Gameboy"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "549005de-cf2d-4141-ae78-50fa32cb58d5",
+    "url": "platforms/549005de-cf2d-4141-ae78-50fa32cb58d5",
+    "description": "DS"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "9d40c932-ce3d-4923-a241-44602a2d5dbb",
+    "url": "platforms/9d40c932-ce3d-4923-a241-44602a2d5dbb",
+    "description": "3DS"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "a6c2f67a-f972-48e9-b9f2-a226314a540e",
+    "url": "platforms/a6c2f67a-f972-48e9-b9f2-a226314a540e",
+    "description": "Sega-CD"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "e02e392e-1e47-4d53-9422-44b6064528d9",
+    "url": "platforms/e02e392e-1e47-4d53-9422-44b6064528d9",
+    "description": "N64"
+  },
+  {
+    "manufacturer": "Panasonic",
+    "id": "3650a77b-0305-40ce-9551-998749bd2cb2",
+    "url": "platforms/3650a77b-0305-40ce-9551-998749bd2cb2",
+    "description": "3DO"
+  },
+  {
+    "manufacturer": "SNK",
+    "id": "8f279e0e-ce1d-4982-bb23-a31a0299de21",
+    "url": "platforms/8f279e0e-ce1d-4982-bb23-a31a0299de21",
+    "description": "Neo-Geo CD"
+  },
+  {
+    "manufacturer": "Sega",
+    "id": "4a67b803-0757-44aa-a0b6-cc7d38cf8c77",
+    "url": "platforms/4a67b803-0757-44aa-a0b6-cc7d38cf8c77",
+    "description": "32X"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "87ad59fe-52b6-4a0e-8edc-1c290b5f2f4a",
+    "url": "platforms/87ad59fe-52b6-4a0e-8edc-1c290b5f2f4a",
+    "description": "Famicom Disk System"
+  },
+  {
+    "manufacturer": "Nintendo",
+    "id": "44defe3a-1d39-4735-aa4a-70355bb029c4",
+    "url": "platforms/44defe3a-1d39-4735-aa4a-70355bb029c4",
+    "description": "Famicom"
+  },
+  {
+    "manufacturer": "Atari",
+    "id": "6c767632-3c77-4ccb-bd4e-abd901089c13",
+    "url": "platforms/6c767632-3c77-4ccb-bd4e-abd901089c13",
+    "description": "7800"
+  },
+  {
+    "manufacturer": "Atari",
+    "id": "8a1e4262-f5e3-42b5-a191-f54c76665099",
+    "url": "platforms/8a1e4262-f5e3-42b5-a191-f54c76665099",
+    "description": "2600"
+  },
+  {
+    "manufacturer": "Atari",
+    "id": "894a3fe9-4e78-4df1-a3d6-8d16c0350814",
+    "url": "platforms/894a3fe9-4e78-4df1-a3d6-8d16c0350814",
+    "description": "Lynx"
+  }
+]

@@ -1,5 +1,5 @@
 /**
- * Represents a gaming platform/console
+ * Represents a gaming platform/console from the API
  */
 export interface Platform {
   /** Unique identifier for this platform */
@@ -10,6 +10,9 @@ export interface Platform {
   
   /** Display name of the platform */
   description: string;
+  
+  /** Manufacturer of the platform (e.g., "Nintendo", "Sony", "Microsoft") */
+  manufacturer: string;
 }
 
 /**
