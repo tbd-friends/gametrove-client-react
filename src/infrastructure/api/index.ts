@@ -1,3 +1,4 @@
 export * from './GameApiService';
 export * from './StatsApiService';
 export * from './PlatformApiService';
+export * from './IgdbApiService';

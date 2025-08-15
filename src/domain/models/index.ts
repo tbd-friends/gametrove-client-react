@@ -3,6 +3,7 @@ export * from './Game';
 export * from './GameCopy';
 export * from './Platform';
 export * from './Publisher';
+export * from './IgdbGame';
 
 // Collection Models
 export * from './Collection';

@@ -1,5 +1,4 @@
-import { Game } from './Game';
-import type { GameDetails, GameCollectionSummary } from './Game';
+import type { Game, GameDetails, GameCollectionSummary } from './Game';
 import type { GameCopy } from './GameCopy';
 import { GameCondition } from './GameCopy';
 import type { CollectionStats, PlatformStats } from './Collection';
