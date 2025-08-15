@@ -2,15 +2,27 @@ import type { Platform } from '../../domain/models';
 import type { IAuthenticationService } from '../../domain/interfaces/IAuthenticationService';
 
 /**
+ * Platform mapping request structure matching the C# backend Mapping object format
+ */
+export interface PlatformMappingRequest {
+    platforms: Array<{
+        platformIdentifier: string; // GUID identifier for platform
+        igdbPlatformId: number; // IGDB platform ID
+    }>;
+}
+
+/**
  * Platform API service for managing platform data
  */
 export interface PlatformApiService {
     getAllPlatforms(): Promise<Platform[]>;
+    publishPlatformMappings(mappings: PlatformMappingRequest): Promise<void>;
 }
 
 export function createPlatformApiService(authService: IAuthenticationService): PlatformApiService {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7054';
     const platformsEndpoint = '/api/platforms';
+    const mappingsEndpoint = '/api/platforms/mapping';
 
     async function makeAuthenticatedRequest<T>(
         url: string,
@@ -55,6 +67,25 @@ export function createPlatformApiService(authService: IAuthenticationService): P
                 throw new Error('Invalid response format from platforms API');
             } catch (error) {
                 console.error('Failed to fetch platforms:', error);
+                throw error;
+            }
+        },
+
+        async publishPlatformMappings(mappings: PlatformMappingRequest): Promise<void> {
+            try {
+                console.log('🔗 Publishing platform mappings to server:', mappings);
+                
+                await makeAuthenticatedRequest<void>(mappingsEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(mappings),
+                });
+                
+                console.log('✅ Platform mappings published successfully');
+            } catch (error) {
+                console.error('Failed to publish platform mappings:', error);
                 throw error;
             }
         }

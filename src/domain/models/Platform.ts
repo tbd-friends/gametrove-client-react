@@ -13,6 +13,9 @@ export interface Platform {
   
   /** Manufacturer of the platform (e.g., "Nintendo", "Sony", "Microsoft") */
   manufacturer: string;
+  
+  /** IGDB platform mapping ID, if mapped */
+  igdbPlatformId?: number | null;
 }
 
 /**

@@ -1,6 +1,11 @@
-import React, { useState } from "react";
-import { TrendingUp, Eye, EyeOff, Copy, RotateCcw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload } from "lucide-react";
 import { usePlatforms, useIgdbPlatforms } from "../hooks";
+import { createPlatformApiService } from "../../infrastructure/api/PlatformApiService";
+import type { PlatformMappingRequest } from "../../infrastructure/api/PlatformApiService";
+import { useAuthService } from "../contexts/AuthContext";
+import { IgdbPlatformCombobox } from "../components/forms";
+import type { IgdbPlatform } from "../../domain/models/IgdbGame";
 
 type TabType = "profile" | "igdb";
 
@@ -15,16 +20,84 @@ export const Settings: React.FC = () => {
 
     const { platforms, loading: platformsLoading } = usePlatforms();
     const { platforms: igdbPlatforms, loading: igdbPlatformsLoading, reloadPlatforms } = useIgdbPlatforms();
+    const authService = useAuthService();
     
-    // Initialize platform mappings based on loaded platforms
-    const [platformMappings, setPlatformMappings] = useState<Record<string, string>>({});
+    // Track mappings with IGDB platforms - mapping platformId to IgdbPlatform
+    const [platformMappings, setPlatformMappings] = useState<Record<string, IgdbPlatform | null>>({});
+    const [publishingMappings, setPublishingMappings] = useState(false);
+
+    // Initialize platform mappings from existing platform data when both datasets are loaded
+    useEffect(() => {
+        if (platforms.length > 0 && igdbPlatforms.length > 0) {
+            const initialMappings: Record<string, IgdbPlatform | null> = {};
+            platforms.forEach(platform => {
+                if (platform.igdbPlatformId) {
+                    // Find the corresponding IgdbPlatform by ID
+                    const igdbPlatform = igdbPlatforms.find(p => p.id === platform.igdbPlatformId);
+                    initialMappings[platform.id] = igdbPlatform || null;
+                } else {
+                    initialMappings[platform.id] = null;
+                }
+            });
+            setPlatformMappings(initialMappings);
+            console.log('🔗 Initialized platform mappings:', initialMappings);
+        }
+    }, [platforms, igdbPlatforms]);
+
+    // Also initialize when just platforms load (for unmapped platforms)
+    useEffect(() => {
+        if (platforms.length > 0) {
+            setPlatformMappings(prev => {
+                const newMappings = { ...prev };
+                platforms.forEach(platform => {
+                    // Only initialize if we don't already have this platform mapped
+                    if (!(platform.id in newMappings)) {
+                        newMappings[platform.id] = null;
+                    }
+                });
+                return newMappings;
+            });
+        }
+    }, [platforms]);
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handlePlatformChange = (platform: string, value: string) => {
-        setPlatformMappings(prev => ({ ...prev, [platform]: value }));
+    const handlePlatformChange = (platformId: string, igdbPlatform: IgdbPlatform | null) => {
+        setPlatformMappings(prev => ({ ...prev, [platformId]: igdbPlatform }));
+    };
+
+    const publishPlatformMappings = async () => {
+        try {
+            setPublishingMappings(true);
+            
+            // Convert mappings to the required Mapping object format, filtering out null values
+            const mappingsArray = Object.entries(platformMappings)
+                .filter(([_, igdbPlatform]) => igdbPlatform !== null)
+                .map(([platformIdentifier, igdbPlatform]) => ({
+                    platformIdentifier,
+                    igdbPlatformId: igdbPlatform!.id
+                }));
+
+            const request: PlatformMappingRequest = {
+                platforms: mappingsArray
+            };
+
+            if (mappingsArray.length === 0) {
+                console.log('No mappings to publish');
+                return;
+            }
+
+            const platformApiService = createPlatformApiService(authService);
+            await platformApiService.publishPlatformMappings(request);
+            
+            console.log(`✅ Published ${mappingsArray.length} platform mappings`);
+        } catch (error) {
+            console.error('Failed to publish platform mappings:', error);
+        } finally {
+            setPublishingMappings(false);
+        }
     };
 
     const renderProfileTab = () => (
@@ -159,15 +232,26 @@ export const Settings: React.FC = () => {
                             Map your platforms to their corresponding IGDB entries for better game matching.
                         </p>
                     </div>
-                    <button
-                        onClick={reloadPlatforms}
-                        disabled={igdbPlatformsLoading}
-                        className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 text-white rounded-lg transition-colors border border-slate-600"
-                        title="Reload IGDB platforms (clears cache)"
-                    >
-                        <RotateCcw className={`w-4 h-4 ${igdbPlatformsLoading ? 'animate-spin' : ''}`} />
-                        <span>Reload Cache</span>
-                    </button>
+                    <div className="flex items-center space-x-3">
+                        <button
+                            onClick={publishPlatformMappings}
+                            disabled={publishingMappings || Object.values(platformMappings).every(v => v === null)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-800 disabled:opacity-50 text-white rounded-lg transition-colors"
+                            title="Publish platform mappings to server"
+                        >
+                            <Upload className={`w-4 h-4 ${publishingMappings ? 'animate-pulse' : ''}`} />
+                            <span>{publishingMappings ? 'Publishing...' : 'Publish Mappings'}</span>
+                        </button>
+                        <button
+                            onClick={reloadPlatforms}
+                            disabled={igdbPlatformsLoading}
+                            className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 text-white rounded-lg transition-colors border border-slate-600"
+                            title="Reload IGDB platforms (clears cache)"
+                        >
+                            <RotateCcw className={`w-4 h-4 ${igdbPlatformsLoading ? 'animate-spin' : ''}`} />
+                            <span>Reload Cache</span>
+                        </button>
+                    </div>
                 </div>
                 <div className="space-y-4">
                     {sortedPlatforms.map((platform) => {
@@ -185,27 +269,12 @@ export const Settings: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="w-64">
-                                        <select
-                                            value={platformMappings[platform.id] || ''}
-                                            onChange={(e) => handlePlatformChange(platform.id, e.target.value)}
-                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                        >
-                                            <option value="">Select IGDB Platform...</option>
-                                            {sortedIgdbPlatforms.map((igdbPlatform) => {
-                                                let displayText = igdbPlatform.name;
-                                                if (igdbPlatform.alternativeName) {
-                                                    displayText += ` (${igdbPlatform.alternativeName})`;
-                                                } else if (igdbPlatform.abbreviation) {
-                                                    displayText += ` (${igdbPlatform.abbreviation})`;
-                                                }
-                                                
-                                                return (
-                                                    <option key={igdbPlatform.id} value={igdbPlatform.name}>
-                                                        {displayText}
-                                                    </option>
-                                                );
-                                            })}
-                                        </select>
+                                        <IgdbPlatformCombobox
+                                            value={platformMappings[platform.id] || null}
+                                            onChange={(igdbPlatform) => handlePlatformChange(platform.id, igdbPlatform)}
+                                            platforms={sortedIgdbPlatforms}
+                                            placeholder="Search IGDB platforms..."
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -248,17 +317,23 @@ export const Settings: React.FC = () => {
 
             {/* Tab Content */}
             <div className="bg-slate-900 rounded-lg p-8">
-                {activeTab === "profile" ? renderProfileTab() : renderIgdbTab()}
+                {activeTab === "profile" ? renderProfileTab() : (
+                    <div>
+                        {renderIgdbTab()}
+                    </div>
+                )}
 
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-slate-700">
-                    <button className="px-6 py-2 text-gray-300 hover:text-white transition-colors">
-                        Cancel
-                    </button>
-                    <button className="px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors">
-                        Save Changes
-                    </button>
-                </div>
+                {/* Action Buttons - Only show for Profile tab */}
+                {activeTab === "profile" && (
+                    <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-slate-700">
+                        <button className="px-6 py-2 text-gray-300 hover:text-white transition-colors">
+                            Cancel
+                        </button>
+                        <button className="px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors">
+                            Save Changes
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
