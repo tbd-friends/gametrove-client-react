@@ -6,13 +6,20 @@ import { PlatformCombobox } from "../components/forms/PlatformCombobox";
 import { useIgdbSearch } from "../hooks";
 import type { Platform, IgdbGame } from "../../domain/models";
 import { IgdbUtils } from "../../domain/models";
+import { createGameApiService } from "../../infrastructure/api";
+import { useAuthService } from "../hooks/useAuthService";
 
 export const AddGame: React.FC = () => {
     const navigate = useNavigate();
+    const authService = useAuthService();
     const [gameTitle, setGameTitle] = useState("");
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
     const [selectedGame, setSelectedGame] = useState<IgdbGame | null>(null);
     const [currentStep, setCurrentStep] = useState<'search' | 'configure'>('search');
+    
+    // Duplicate game detection state
+    const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+    const [gameExists, setGameExists] = useState(false);
     
     // Use IGDB search hook
     const { results: searchResults, loading: isSearching, error: searchError, hasSearched, searchGames, clearResults } = useIgdbSearch();
@@ -20,32 +27,56 @@ export const AddGame: React.FC = () => {
 
     // Auto-search when both fields are filled
     useEffect(() => {
-        const performSearch = async () => {
+        const performDuplicateCheckAndSearch = async () => {
             if (!selectedPlatform || !selectedPlatform.igdbPlatformId) return;
             
             setSelectedGame(null);
-            // Use the platform's IGDB platform ID for more accurate matching
-            await searchGames(gameTitle, selectedPlatform.igdbPlatformId);
+            setGameExists(false);
+            
+            try {
+                // First, check if the game already exists in the collection
+                setIsCheckingDuplicate(true);
+                const gameApiService = createGameApiService(authService);
+                const exists = await gameApiService.checkGameExists(selectedPlatform.id, gameTitle);
+                
+                setGameExists(exists);
+                
+                if (exists) {
+                    // If game exists, don't proceed with IGDB search
+                    clearResults();
+                    console.log(`⚠️ Game "${gameTitle}" on "${selectedPlatform.description}" already exists in collection`);
+                } else {
+                    // If game doesn't exist, proceed with IGDB search
+                    await searchGames(gameTitle, selectedPlatform.igdbPlatformId);
+                }
+            } catch (error) {
+                console.error('Error checking for duplicate game:', error);
+                // If duplicate check fails, proceed with IGDB search anyway
+                await searchGames(gameTitle, selectedPlatform.igdbPlatformId);
+            } finally {
+                setIsCheckingDuplicate(false);
+            }
         };
 
         const debounceTimer = setTimeout(() => {
             if (gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId) {
-                performSearch();
+                performDuplicateCheckAndSearch();
             } else {
                 clearResults();
                 setSelectedGame(null);
+                setGameExists(false);
             }
         }, 500);
 
         return () => clearTimeout(debounceTimer);
-    }, [gameTitle, selectedPlatform, clearResults, searchGames]);
+    }, [gameTitle, selectedPlatform, clearResults, searchGames, authService]);
 
     const handleGameSelect = (game: IgdbGame) => {
         setSelectedGame(game);
     };
 
     const canContinue = currentStep === 'search' 
-        ? (selectedGame !== null && gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId)
+        ? (selectedGame !== null && gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId && !gameExists)
         : selectedGame !== null;
 
     const handleContinue = () => {
@@ -164,8 +195,62 @@ export const AddGame: React.FC = () => {
                             )}
                         </div>
 
+                {/* Game Already Found Section */}
+                {gameExists && (
+                    <div className="mb-8">
+                        <div className="bg-red-900/20 border border-red-500 rounded-lg p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-xl">⚠</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-red-400 font-semibold text-lg mb-2">Game Already Found In Collection</h3>
+                                    <p className="text-red-300 mb-4">
+                                        This exact game for this platform already exists in your collection. Gametrove does not support adding 
+                                        duplicate copies of the same game for the same platform.
+                                    </p>
+                                    
+                                    <div className="bg-red-800/30 rounded-lg p-4 mb-4">
+                                        <div className="flex items-center gap-2 text-cyan-400 mb-3">
+                                            <span className="text-cyan-400">ℹ</span>
+                                            <span className="font-medium">Alternative Options</span>
+                                        </div>
+                                        <ul className="text-red-200 text-sm space-y-1">
+                                            <li>• Try searching for the same game on a different platform</li>
+                                            <li>• Look for special editions or variants of this title</li>
+                                            <li>• Update the existing entry if needed</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => navigate('/collection')}
+                                            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors text-sm font-medium"
+                                        >
+                                            <span>👁</span>
+                                            View in Collection
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                setGameTitle('');
+                                                setSelectedPlatform(null);
+                                            }}
+                                            className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-gray-300 rounded-lg hover:bg-slate-500 hover:text-white transition-colors text-sm font-medium"
+                                        >
+                                            <span>🔍</span>
+                                            Search Different Game
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Search Results Section */}
-                {(isSearching || hasSearched) && (
+                {(isSearching || hasSearched || isCheckingDuplicate) && !gameExists && (
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-white">Search Results</h3>
@@ -177,11 +262,13 @@ export const AddGame: React.FC = () => {
                         </div>
 
                         {/* Loading State */}
-                        {isSearching && (
+                        {(isSearching || isCheckingDuplicate) && (
                             <div className="flex items-center justify-center py-12">
                                 <div className="flex flex-col items-center gap-3">
                                     <Loader2 className="animate-spin text-cyan-500" size={32} />
-                                    <p className="text-gray-400">Searching IGDB...</p>
+                                    <p className="text-gray-400">
+                                        {isCheckingDuplicate ? 'Checking for duplicates...' : 'Searching IGDB...'}
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -268,9 +355,9 @@ export const AddGame: React.FC = () => {
                             {/* Continue without linking */}
                             <button
                                 onClick={handleContinueWithoutLinking}
-                                disabled={!gameTitle.trim() || !selectedPlatform || !selectedPlatform.igdbPlatformId}
+                                disabled={!gameTitle.trim() || !selectedPlatform || !selectedPlatform.igdbPlatformId || gameExists}
                                 className={`text-sm transition-colors ${
-                                    gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId
+                                    gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId && !gameExists
                                         ? 'text-gray-400 hover:text-white cursor-pointer'
                                         : 'text-gray-600 cursor-not-allowed'
                                 }`}

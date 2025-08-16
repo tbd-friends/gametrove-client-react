@@ -22,6 +22,8 @@ export interface GameApiService {
     getGameById(id: string): Promise<Game | null>;
 
     searchGames(query: string): Promise<Game[]>;
+
+    checkGameExists(platformId: string, title: string): Promise<boolean>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -171,6 +173,27 @@ export function createGameApiService(authService: IAuthenticationService): GameA
             } catch (error) {
                 console.error(`Failed to search games with query "${query}":`, error);
                 throw error;
+            }
+        },
+
+        async checkGameExists(platformId: string, title: string): Promise<boolean> {
+            try {
+                const encodedTitle = encodeURIComponent(title);
+                const url = `${gamesEndpoint}/${platformId}/${encodedTitle}`;
+                
+                const response = await fetch(`${baseUrl}${url}`, {
+                    method: 'HEAD',
+                    headers: {
+                        'Authorization': `Bearer ${await authService.getAccessToken()}`,
+                    },
+                });
+
+                // Return true if game exists (200), false if not found (404)
+                return response.status === 200;
+            } catch (error) {
+                console.error('Error checking if game exists:', error);
+                // If there's an error, assume game doesn't exist to allow proceeding
+                return false;
             }
         }
     };
@@ -343,6 +366,27 @@ export function createGameApiServiceWithConfig(
             } catch (error) {
                 console.error(`Failed to search games with query "${query}":`, error);
                 throw error;
+            }
+        },
+
+        async checkGameExists(platformId: string, title: string): Promise<boolean> {
+            try {
+                const encodedTitle = encodeURIComponent(title);
+                const url = `${gamesEndpoint}/${platformId}/${encodedTitle}`;
+                
+                const response = await fetch(`${baseUrl}${url}`, {
+                    method: 'HEAD',
+                    headers: {
+                        'Authorization': `Bearer ${await authService.getAccessToken()}`,
+                    },
+                });
+
+                // Return true if game exists (200), false if not found (404)
+                return response.status === 200;
+            } catch (error) {
+                console.error('Error checking if game exists:', error);
+                // If there's an error, assume game doesn't exist to allow proceeding
+                return false;
             }
         }
     };
