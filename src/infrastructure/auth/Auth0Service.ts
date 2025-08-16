@@ -14,10 +14,10 @@ export const createAuth0Service = (
     isLoading: boolean,
     user: User | null,
     error: Error | undefined,
-    loginWithRedirect: (options?: any) => Promise<void>,
-    logoutFn: (options?: any) => void,
+    loginWithRedirect: (options?: Record<string, unknown>) => Promise<void>,
+    logoutFn: (options?: Record<string, unknown>) => void,
     getAccessTokenSilently: () => Promise<string>,
-    handleRedirectCallback: () => Promise<any>
+    handleRedirectCallback: () => Promise<Record<string, unknown>>
 ): IAuthenticationService => {
     return {
         isAuthenticated,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createStatsApiService } from '../../infrastructure/api';
-import { useAuthService } from '../contexts/AuthContext';
+import { useAuthService } from './useAuthService';
 import type { CollectionStats } from '../../domain/models';
 
 export interface UseStatsReturn {

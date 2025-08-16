@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { slugToDisplayName } from "../utils/slugUtils";
 import { createGameApiService } from "../../infrastructure/api";
-import { useAuthService } from "../contexts/AuthContext";
+import { useAuthService } from "../hooks/useAuthService";
 import type { Game } from "../../domain/models";
 import { mapApiConditionToGameCondition } from "../../domain/models/GameCopy";
 
@@ -317,7 +317,7 @@ export const GameDetail: React.FC = () => {
                         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
                             <h3 className="text-xl font-semibold text-white mb-4">Your Copies</h3>
                             <div className="space-y-4">
-                                {displayData.copies.length > 0 ? displayData.copies.map((copy, index) => (
+                                {displayData.copies.length > 0 ? displayData.copies.map((copy) => (
                                     <div key={copy.id} className="bg-slate-700 rounded-lg p-4">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">

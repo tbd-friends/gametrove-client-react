@@ -5,11 +5,11 @@
 export const consoleNameToSlug = (name: string): string => {
     return name
         .toLowerCase()
-        .replace(/[\/\\]/g, '-')  // Replace forward/back slashes with hyphens
+        .replace(/[/\\]/g, '-')  // Replace forward/back slashes with hyphens
         .replace(/\s+/g, '-')     // Replace spaces with hyphens
-        .replace(/[^\w\-]/g, '')  // Remove non-word characters except hyphens
-        .replace(/\-+/g, '-')     // Replace multiple hyphens with single hyphen
-        .replace(/^\-|\-$/g, ''); // Remove leading/trailing hyphens
+        .replace(/[^\w-]/g, '')  // Remove non-word characters except hyphens
+        .replace(/-+/g, '-')     // Replace multiple hyphens with single hyphen
+        .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
 };
 
 /**

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createIgdbApiService } from '../../infrastructure/api/IgdbApiService';
-import { useAuthService } from '../contexts/AuthContext';
+import { useAuthService } from './useAuthService';
 import type { IgdbPlatform } from '../../domain/models/IgdbGame';
 
 export interface UseIgdbPlatformsReturn {

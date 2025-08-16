@@ -2,12 +2,14 @@ import {Home, Monitor, Settings, X, Gamepad2, Copy, Heart} from "lucide-react";
 import React from "react";
 import {NavLink} from "react-router-dom";
 import {useStats} from "../../hooks";
+import { useAuthService } from "../../hooks/useAuthService";
 
 interface NavItem {
     id: string;
     label: string;
     icon: React.ReactNode;
     path: string;
+    requiresAuth?: boolean;
 }
 
 export const Sidebar: React.FC<{
@@ -15,13 +17,16 @@ export const Sidebar: React.FC<{
     onClose: () => void;
 }> = ({isOpen, onClose}) => {
     const {stats, loading, error} = useStats();
+    const { isAuthenticated } = useAuthService();
 
     const navItems: NavItem[] = [
         {id: 'dashboard', label: 'Dashboard', icon: <Home size={20}/>, path: '/'},
-        {id: 'collection', label: 'My Collection', icon: <Gamepad2 size={20}/>, path: '/collection'},
-        {id: 'consoles', label: 'Console Tracker', icon: <Monitor size={20}/>, path: '/consoles'},
-        {id: 'settings', label: 'Settings', icon: <Settings size={20}/>, path: '/settings'},
+        {id: 'collection', label: 'My Collection', icon: <Gamepad2 size={20}/>, path: '/collection', requiresAuth: true},
+        {id: 'consoles', label: 'Console Tracker', icon: <Monitor size={20}/>, path: '/consoles', requiresAuth: true},
+        {id: 'settings', label: 'Settings', icon: <Settings size={20}/>, path: '/settings', requiresAuth: true},
     ];
+
+    const visibleNavItems = navItems.filter(item => !item.requiresAuth || isAuthenticated);
 
     return (
         <>
@@ -59,7 +64,7 @@ export const Sidebar: React.FC<{
                 {/* Navigation Items */}
                 <nav className="mt-16 lg:mt-24" aria-label="Primary navigation">
                     <ul role="list">
-                        {navItems.map((item) => (
+                        {visibleNavItems.map((item) => (
                             <li key={item.path} className="mb-1">
                                 <NavLink
                                     to={item.path}
@@ -81,7 +86,8 @@ export const Sidebar: React.FC<{
                     </ul>
                 </nav>
 
-                {/* Collection Stats - Desktop Only */}
+                {/* Collection Stats - Desktop Only - Authenticated Users Only */}
+                {isAuthenticated && (
                 <div className="hidden lg:block mt-8 px-4">
                     <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">
                         COLLECTION STATS
@@ -154,6 +160,7 @@ export const Sidebar: React.FC<{
                         )}
                     </div>
                 </div>
+                )}
             </aside>
         </>
     );

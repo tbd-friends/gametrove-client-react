@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createGameApiService } from '../../infrastructure/api';
-import { useAuthService } from '../contexts/AuthContext';
+import { useAuthService } from './useAuthService';
 import type { Game } from '../../domain/models';
 
 export interface UseGamesDataProps {

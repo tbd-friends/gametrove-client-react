@@ -5,11 +5,13 @@ import {AuthContext, type AuthContextType} from "./AuthContext.tsx";
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({children}) => {
     const authService = useAuth0Service();
 
-    const hasRole = (role: string): boolean => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const hasRole = (_role: string): boolean => {
         return false;
     };
 
-    const hasPermission = (permission: string): boolean => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const hasPermission = (_permission: string): boolean => {
         return false;
     };
 

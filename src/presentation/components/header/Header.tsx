@@ -1,11 +1,20 @@
 import {Menu, Plus, Search, User, Gamepad2, Heart, LogIn, LogOut} from "lucide-react";
 import React, {useState, useEffect, useRef} from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthService } from "../../contexts/AuthContext";
+import { useAuthService } from "../../hooks/useAuthService";
+
+interface SearchResult {
+  id: number;
+  title: string;
+  platform: string;
+  genre: string;
+  inCollection: boolean;
+  favorite: boolean;
+}
 
 export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
     const [searchValue, setSearchValue] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
@@ -67,7 +76,7 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
         }, 200);
 
         return () => clearTimeout(debounceTimer);
-    }, [searchValue]);
+    }, [searchValue, mockSearchResults]);
 
     // Click outside to close dropdown
     useEffect(() => {

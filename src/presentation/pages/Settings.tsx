@@ -3,7 +3,7 @@ import { TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload } from "lucide-react";
 import { usePlatforms, useIgdbPlatforms } from "../hooks";
 import { createPlatformApiService } from "../../infrastructure/api/PlatformApiService";
 import type { PlatformMappingRequest } from "../../infrastructure/api/PlatformApiService";
-import { useAuthService } from "../contexts/AuthContext";
+import { useAuthService } from "../hooks/useAuthService";
 import { IgdbPlatformCombobox } from "../components/forms";
 import type { IgdbPlatform } from "../../domain/models/IgdbGame";
 
@@ -74,7 +74,7 @@ export const Settings: React.FC = () => {
             
             // Convert mappings to the required Mapping object format, filtering out null values
             const mappingsArray = Object.entries(platformMappings)
-                .filter(([_, igdbPlatform]) => igdbPlatform !== null)
+                .filter(([, igdbPlatform]) => igdbPlatform !== null)
                 .map(([platformIdentifier, igdbPlatform]) => ({
                     platformIdentifier,
                     igdbPlatformId: igdbPlatform!.id
@@ -189,7 +189,7 @@ export const Settings: React.FC = () => {
         );
 
         // Get platform icon and color based on manufacturer/name
-        const getPlatformIcon = (platform: any) => {
+        const getPlatformIcon = (platform: Platform) => {
             const name = platform.description.toLowerCase();
             const manufacturer = platform.manufacturer.toLowerCase();
             

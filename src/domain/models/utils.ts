@@ -1,4 +1,4 @@
-import type { Game, GameDetails, GameCollectionSummary } from './Game';
+import type { Game, GameCollectionSummary } from './Game';
 import type { GameCopy } from './GameCopy';
 import { GameCondition } from './GameCopy';
 import type { CollectionStats, PlatformStats } from './Collection';
@@ -199,10 +199,11 @@ export function sortGames(games: Game[], sortBy: 'name' | 'platform' | 'value' |
         return a.platform.description.localeCompare(b.platform.description);
       case 'value':
         return calculateGameTotalValue(b) - calculateGameTotalValue(a);
-      case 'date':
+      case 'date': {
         const aDate = Math.max(...a.copies.map(c => new Date(c.purchasedDate || '').getTime()));
         const bDate = Math.max(...b.copies.map(c => new Date(c.purchasedDate || '').getTime()));
         return bDate - aDate;
+      }
       default:
         return 0;
     }

@@ -1,43 +1,26 @@
 import React from 'react';
-import { useAuth } from '../../../application/context/AuthContext';
-import { LoginButton } from './LoginButton';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuthService } from '../../hooks/useAuthService';
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
-    fallback?: React.ReactNode;
-    requireRole?: string;
-    requirePermission?: string;
+  children: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-                                                                  children,
-                                                                  fallback,
-                                                                  requireRole,
-                                                                  requirePermission
-                                                              }) => {
-    const { isAuthenticated, isLoading, hasRole, hasPermission } = useAuth();
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuthService();
+  const location = useLocation();
 
-    if (isLoading) {
-        return <div>Checking authentication...</div>;
-    }
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-500"></div>
+      </div>
+    );
+  }
 
-    if (!isAuthenticated) {
-        return fallback || (
-            <div>
-                <p>Please log in to access this content.</p>
-                <LoginButton />
-            </div>
-        );
-    }
+  if (!isAuthenticated) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
 
-    // Domain-driven authorization checks
-    if (requireRole && !hasRole(requireRole)) {
-        return <div>You don't have the required role: {requireRole}</div>;
-    }
-
-    if (requirePermission && !hasPermission(requirePermission)) {
-        return <div>You don't have the required permission: {requirePermission}</div>;
-    }
-
-    return <>{children}</>;
+  return <>{children}</>;
 };

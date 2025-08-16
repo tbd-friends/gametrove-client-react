@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { createIgdbApiService } from '../../infrastructure/api';
-import { useAuthService } from '../contexts/AuthContext';
+import { useAuthService } from './useAuthService';
 import type { IgdbGame } from '../../domain/models';
 
 export interface UseIgdbSearchReturn {

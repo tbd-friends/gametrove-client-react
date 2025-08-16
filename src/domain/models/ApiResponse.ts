@@ -42,7 +42,7 @@ export interface ApiError {
   success: false;
   error: string;
   errorCode?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
