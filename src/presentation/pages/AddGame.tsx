@@ -21,16 +21,15 @@ export const AddGame: React.FC = () => {
     // Auto-search when both fields are filled
     useEffect(() => {
         const performSearch = async () => {
-            if (!selectedPlatform) return;
+            if (!selectedPlatform || !selectedPlatform.igdbPlatformId) return;
             
             setSelectedGame(null);
-            // Use the platform description as the search platform parameter
-            const platformName = selectedPlatform.description;
-            await searchGames(gameTitle, platformName);
+            // Use the platform's IGDB platform ID for more accurate matching
+            await searchGames(gameTitle, selectedPlatform.igdbPlatformId);
         };
 
         const debounceTimer = setTimeout(() => {
-            if (gameTitle.trim() && selectedPlatform) {
+            if (gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId) {
                 performSearch();
             } else {
                 clearResults();
@@ -46,7 +45,7 @@ export const AddGame: React.FC = () => {
     };
 
     const canContinue = currentStep === 'search' 
-        ? (selectedGame !== null && gameTitle.trim() && selectedPlatform)
+        ? (selectedGame !== null && gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId)
         : selectedGame !== null;
 
     const handleContinue = () => {
@@ -150,9 +149,19 @@ export const AddGame: React.FC = () => {
                             </div>
 
                             {/* Helper Text */}
-                            <p className="text-gray-400 text-sm mb-8">
-                                Search will begin automatically when both title and platform are provided
+                            <p className="text-gray-400 text-sm mb-4">
+                                Search will begin automatically when both title and platform are provided. Platform must have IGDB mapping configured.
                             </p>
+
+                            {/* IGDB Mapping Warning */}
+                            {selectedPlatform && !selectedPlatform.igdbPlatformId && (
+                                <div className="bg-amber-900/20 border border-amber-500 rounded-lg p-4 mb-4">
+                                    <p className="text-amber-400 text-sm">
+                                        <strong>Platform not mapped:</strong> "{selectedPlatform.description}" doesn't have IGDB mapping configured. 
+                                        Please configure the platform mapping in Settings to enable game search.
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                 {/* Search Results Section */}
@@ -259,9 +268,9 @@ export const AddGame: React.FC = () => {
                             {/* Continue without linking */}
                             <button
                                 onClick={handleContinueWithoutLinking}
-                                disabled={!gameTitle.trim() || !selectedPlatform}
+                                disabled={!gameTitle.trim() || !selectedPlatform || !selectedPlatform.igdbPlatformId}
                                 className={`text-sm transition-colors ${
-                                    gameTitle.trim() && selectedPlatform
+                                    gameTitle.trim() && selectedPlatform && selectedPlatform.igdbPlatformId
                                         ? 'text-gray-400 hover:text-white cursor-pointer'
                                         : 'text-gray-600 cursor-not-allowed'
                                 }`}

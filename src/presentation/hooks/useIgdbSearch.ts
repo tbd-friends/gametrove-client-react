@@ -8,7 +8,7 @@ export interface UseIgdbSearchReturn {
   loading: boolean;
   error: string | null;
   hasSearched: boolean;
-  searchGames: (term: string, platform: string) => Promise<void>;
+  searchGames: (term: string, platformId: number) => Promise<void>;
   clearResults: () => void;
 }
 
@@ -22,13 +22,13 @@ export function useIgdbSearch(): UseIgdbSearchReturn {
   const [hasSearched, setHasSearched] = useState(false);
   const authService = useAuthService();
 
-  const searchGames = useCallback(async (term: string, platform: string) => {
+  const searchGames = useCallback(async (term: string, platformId: number) => {
     if (!authService.isAuthenticated || authService.isLoading) {
       setError('Authentication required for search');
       return;
     }
 
-    if (!term.trim() || !platform.trim()) {
+    if (!term.trim() || !platformId) {
       setError('Both game title and platform are required');
       return;
     }
@@ -39,7 +39,7 @@ export function useIgdbSearch(): UseIgdbSearchReturn {
       setHasSearched(false);
       
       const igdbApiService = createIgdbApiService(authService);
-      const searchResults = await igdbApiService.searchGames(term, platform);
+      const searchResults = await igdbApiService.searchGames(term, platformId);
       
       setResults(searchResults);
       setHasSearched(true);

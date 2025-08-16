@@ -23,7 +23,7 @@ export interface IgdbGameResult {
  * IGDB API service for game search and platform functionality
  */
 export interface IgdbApiService {
-    searchGames(term: string, platform: string): Promise<IgdbGameResult[]>;
+    searchGames(term: string, platformId: number): Promise<IgdbGameResult[]>;
     getPlatforms(): Promise<IgdbPlatform[]>;
     clearPlatformsCache(): void;
 }
@@ -88,13 +88,13 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
     }
 
     return {
-        async searchGames(term: string, platform: string): Promise<IgdbGameResult[]> {
+        async searchGames(term: string, platformId: number): Promise<IgdbGameResult[]> {
             try {
-                console.log('🎮 Searching IGDB for games:', { term, platform });
+                console.log('🎮 Searching IGDB for games:', { term, platformId });
                 
                 const searchParams = new URLSearchParams({
                     term: term.trim(),
-                    platform: platform.trim()
+                    platformId: platformId.toString()
                 });
                 
                 const games = await makeAuthenticatedRequest<IgdbGameResult[]>(
