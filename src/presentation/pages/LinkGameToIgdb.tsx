@@ -6,7 +6,6 @@ import { useIgdbSearch } from "../hooks";
 import type { IgdbGame, Game } from "../../domain/models";
 import { IgdbUtils } from "../../domain/models";
 import { createGameApiService } from "../../infrastructure/api";
-import type { LinkGameToIgdbRequest } from "../../infrastructure/api";
 import { useAuthService } from "../hooks/useAuthService";
 
 export const LinkGameToIgdb: React.FC = () => {
@@ -125,11 +124,11 @@ export const LinkGameToIgdb: React.FC = () => {
             console.log('🔗 Linking game:', gameId, 'to IGDB game:', selectedGame.id);
             
             // Make the actual API call to link the game
-            const linkedGame = await gameApiService.linkGameToIgdb(gameId, {
+            await gameApiService.linkGameToIgdb(gameId, {
                 igdbGameId: selectedGame.id
             });
             
-            console.log('✅ Game linked successfully:', linkedGame);
+            console.log('✅ Game linked successfully');
             navigate(`/collection/game/${gameId}`);
         } catch (error) {
             console.error('❌ Failed to link game:', error);

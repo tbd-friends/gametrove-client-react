@@ -35,9 +35,9 @@ export interface GameApiService {
 
     checkGameExists(platformId: string, title: string): Promise<boolean>;
 
-    saveGame(request: SaveGameRequest): Promise<Game>;
+    saveGame(request: SaveGameRequest): Promise<string>;
 
-    linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<Game>;
+    linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -211,66 +211,76 @@ export function createGameApiService(authService: IAuthenticationService): GameA
             }
         },
 
-        async saveGame(request: SaveGameRequest): Promise<Game> {
+        async saveGame(request: SaveGameRequest): Promise<string> {
             try {
                 console.log('💾 Saving game to collection:', request);
                 
-                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
-                    `${gamesEndpoint}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(request),
-                    }
-                );
-                
-                if ('success' in response && response.success) {
-                    console.log('✅ Game saved successfully:', response.data);
-                    return response.data;
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    const rawGameId = await response.text();
+                    const gameId = rawGameId.replace(/"/g, '').trim();
+                    console.log('✅ Game saved successfully. Game ID:', gameId);
+                    return gameId;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to add games.');
+                }
+                if (response.status === 409) {
+                    throw new Error('Game already exists in your collection.');
                 }
                 
-                // Handle direct Game response (fallback)
-                if ('id' in response) {
-                    console.log('✅ Game saved successfully:', response);
-                    return response as Game;
-                }
-                
-                throw new Error('Invalid response format from save game API');
+                throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
                 throw error;
             }
         },
 
-        async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<Game> {
+        async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void> {
             try {
                 console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
                 
-                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
-                    `${gamesEndpoint}/${gameId}/link`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(request),
-                    }
-                );
-                
-                if ('success' in response && response.success) {
-                    console.log('✅ Game linked to IGDB successfully:', response.data);
-                    return response.data;
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    const rawLinkedGameId = await response.text();
+                    const linkedGameId = rawLinkedGameId.replace(/"/g, '').trim();
+                    console.log('✅ Game linked to IGDB successfully. Linked game ID:', linkedGameId);
+                    return;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to link this game.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Game not found or IGDB game not found.');
                 }
                 
-                // Handle direct Game response (fallback)
-                if ('id' in response) {
-                    console.log('✅ Game linked to IGDB successfully:', response);
-                    return response as Game;
-                }
-                
-                throw new Error('Invalid response format from link game API');
+                throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to link game to IGDB:', error);
                 throw error;
@@ -470,66 +480,76 @@ export function createGameApiServiceWithConfig(
             }
         },
 
-        async saveGame(request: SaveGameRequest): Promise<Game> {
+        async saveGame(request: SaveGameRequest): Promise<string> {
             try {
                 console.log('💾 Saving game to collection:', request);
                 
-                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
-                    `${gamesEndpoint}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(request),
-                    }
-                );
-                
-                if ('success' in response && response.success) {
-                    console.log('✅ Game saved successfully:', response.data);
-                    return response.data;
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    const rawGameId = await response.text();
+                    const gameId = rawGameId.replace(/"/g, '').trim();
+                    console.log('✅ Game saved successfully. Game ID:', gameId);
+                    return gameId;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to add games.');
+                }
+                if (response.status === 409) {
+                    throw new Error('Game already exists in your collection.');
                 }
                 
-                // Handle direct Game response (fallback)
-                if ('id' in response) {
-                    console.log('✅ Game saved successfully:', response);
-                    return response as Game;
-                }
-                
-                throw new Error('Invalid response format from save game API');
+                throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
                 throw error;
             }
         },
 
-        async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<Game> {
+        async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void> {
             try {
                 console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
                 
-                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
-                    `${gamesEndpoint}/${gameId}/link`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(request),
-                    }
-                );
-                
-                if ('success' in response && response.success) {
-                    console.log('✅ Game linked to IGDB successfully:', response.data);
-                    return response.data;
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    const rawLinkedGameId = await response.text();
+                    const linkedGameId = rawLinkedGameId.replace(/"/g, '').trim();
+                    console.log('✅ Game linked to IGDB successfully. Linked game ID:', linkedGameId);
+                    return;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to link this game.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Game not found or IGDB game not found.');
                 }
                 
-                // Handle direct Game response (fallback)
-                if ('id' in response) {
-                    console.log('✅ Game linked to IGDB successfully:', response);
-                    return response as Game;
-                }
-                
-                throw new Error('Invalid response format from link game API');
+                throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to link game to IGDB:', error);
                 throw error;

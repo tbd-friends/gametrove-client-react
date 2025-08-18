@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, ChevronRight, Loader2, FileText, Image, Plus, Save } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, FileText, Plus, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { PlatformCombobox } from "../components/forms/PlatformCombobox";
@@ -129,10 +129,10 @@ export const AddGame: React.FC = () => {
 
             console.log('🎮 Saving game with request:', saveRequest);
 
-            const savedGame = await gameApiService.saveGame(saveRequest);
+            const gameId = await gameApiService.saveGame(saveRequest);
             
-            console.log('✅ Game saved successfully:', savedGame);
-            navigate('/collection');
+            console.log('✅ Game saved successfully with ID:', gameId);
+            navigate(`/collection/game/${gameId}`);
         } catch (error) {
             console.error('❌ Failed to save game:', error);
             setSaveError(error instanceof Error ? error.message : 'Failed to save game');
@@ -464,23 +464,6 @@ export const AddGame: React.FC = () => {
                                     <p className="text-gray-500 text-sm">Add game details manually or link with IGDB</p>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Screenshots Section */}
-                        <div className="mb-8">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-white">Screenshots</h3>
-                                <button className="flex items-center gap-2 px-3 py-1 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-colors">
-                                    <Plus size={16} />
-                                    Add Screenshot
-                                </button>
-                            </div>
-                            {/* Keep placeholder screenshots for now as IGDB response doesn't include them */}
-                            <div className="bg-slate-700/50 rounded-lg border border-slate-600 p-8 text-center">
-                                <Image className="mx-auto text-gray-500 mb-3" size={48} />
-                                <p className="text-gray-400 mb-1">No screenshots available</p>
-                                <p className="text-gray-500 text-sm">Upload screenshots to showcase the game</p>
-                            </div>
                         </div>
 
                         {/* Save Error */}
