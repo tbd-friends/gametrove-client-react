@@ -82,12 +82,12 @@ export function useGamesData({
     }
 
     loadGamesForConsoleView();
-  }, [authService.isAuthenticated, authService.isLoading, viewMode, hasSelectedConsole, allGamesCache.length]);
+  }, [authService.isAuthenticated, viewMode, hasSelectedConsole]);
 
   // Effect for LIST VIEW - Make paginated API calls
   useEffect(() => {
     async function loadGamesForListView() {
-      if (!authService.isAuthenticated) {
+      if (!authService.isAuthenticated || authService.isLoading) {
         return;
       }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Star, Edit, Trash2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Star, Edit, Trash2, AlertCircle, Link } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { slugToDisplayName } from "../utils/slugUtils";
@@ -54,7 +54,7 @@ export const GameDetail: React.FC = () => {
         }
 
         loadGameData();
-    }, [gameId, authService.isAuthenticated, authService.isLoading]);
+    }, [gameId, authService.isAuthenticated]);
 
     // Load IGDB details when game has igdbGameId
     useEffect(() => {
@@ -81,7 +81,7 @@ export const GameDetail: React.FC = () => {
         }
 
         loadIgdbDetails();
-    }, [game?.igdbGameId, authService.isAuthenticated, authService.isLoading]);
+    }, [game?.igdbGameId, authService.isAuthenticated]);
 
     // Merge real game data with placeholder data where needed
     const displayData = React.useMemo(() => {
@@ -168,6 +168,18 @@ export const GameDetail: React.FC = () => {
         }
     };
 
+    const handleLinkToIgdb = () => {
+        if (gameId && game) {
+            navigate(`/collection/game/${gameId}/link-igdb`, {
+                state: { 
+                    gameTitle: game.description,
+                    igdbPlatformId: game.platform.igdbPlatformId, // May be undefined for older games
+                    platformName: game.platform.description
+                }
+            });
+        }
+    };
+
     return (
         <div className="w-full">
             {/* Breadcrumb Navigation */}
@@ -214,7 +226,18 @@ export const GameDetail: React.FC = () => {
 
                         {/* Game Info */}
                         <div className="flex-1">
-                            <h1 className="text-4xl font-bold text-white mb-2">{displayData.title}</h1>
+                            <div className="flex items-start justify-between mb-2">
+                                <h1 className="text-4xl font-bold text-white">{displayData.title}</h1>
+                                {!game?.igdbGameId && (
+                                    <button
+                                        onClick={handleLinkToIgdb}
+                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
+                                    >
+                                        <Link size={16} />
+                                        Link to IGDB
+                                    </button>
+                                )}
+                            </div>
                             <p className="text-gray-400 text-lg mb-4">
                                 {displayData.platform} • {displayData.publisher} • {displayData.year}
                             </p>
@@ -285,8 +308,15 @@ export const GameDetail: React.FC = () => {
                                     {!game?.igdbGameId ? (
                                         <div className="text-center py-8">
                                             <div className="text-gray-400 text-lg mb-3">📚</div>
-                                            <p className="text-gray-400 mb-2">No synopsis available</p>
-                                            <p className="text-gray-500 text-sm">Link this game to IGDB to get detailed synopsis and information</p>
+                                            <p className="text-gray-400 mb-2">No Synopsis Available</p>
+                                            <p className="text-gray-500 text-sm mb-4">Link this game to IGDB to automatically populate synopsis and additional details.</p>
+                                            <button
+                                                onClick={handleLinkToIgdb}
+                                                className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors mx-auto"
+                                            >
+                                                <Link size={16} />
+                                                Link to IGDB
+                                            </button>
                                         </div>
                                     ) : igdbLoading ? (
                                         <div className="flex items-center gap-3 text-gray-400">
@@ -366,8 +396,15 @@ export const GameDetail: React.FC = () => {
                                     <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
                                         <div className="text-center">
                                             <div className="text-gray-400 text-4xl mb-4">🖼️</div>
-                                            <p className="text-gray-400 mb-2">No screenshots available</p>
-                                            <p className="text-gray-500 text-sm">Link this game to IGDB to get screenshots and media</p>
+                                            <p className="text-gray-400 mb-2">No Screenshots Available</p>
+                                            <p className="text-gray-500 text-sm mb-4">Link this game to IGDB to automatically populate screenshots and media.</p>
+                                            <button
+                                                onClick={handleLinkToIgdb}
+                                                className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors mx-auto"
+                                            >
+                                                <Link size={16} />
+                                                Link to IGDB
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
