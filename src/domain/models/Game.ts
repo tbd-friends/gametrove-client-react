@@ -84,6 +84,8 @@ export interface GameScreenshot {
     url: string;
     title?: string;
     thumbnailUrl?: string;
+    width?: number;
+    height?: number;
 }
 
 /**

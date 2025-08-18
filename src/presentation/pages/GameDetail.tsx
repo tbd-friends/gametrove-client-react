@@ -108,7 +108,10 @@ export const GameDetail: React.FC = () => {
             rating: 4.8,
             reviewCount: 245,
             esrb: "E",
-            genres: ["Adventure"], // TODO: Add when available in API
+            genres: [
+                ...(igdbDetails?.genres?.map(g => g.name) || []),
+                ...(igdbDetails?.themes?.map(t => t.name) || [])
+            ].filter(Boolean).slice(0, 6),
             synopsis: igdbDetails?.summary || "Game details coming soon. This information will be available once we integrate with external game databases.",
             coverImage: "🎮",
             screenshots: igdbDetails?.screenshots?.map((screenshot, index) => ({
@@ -243,20 +246,40 @@ export const GameDetail: React.FC = () => {
                             </p>
                     
                             {/* Genre Tags */}
-                            <div className="flex gap-2 mb-4">
-                                {displayData.genres.map((genre) => (
-                                    <span
-                                        key={genre}
-                                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                            genre === "Platformer" ? "bg-blue-600 text-white" :
-                                            genre === "Action" ? "bg-green-600 text-white" :
-                                            "bg-purple-600 text-white"
-                                        }`}
-                                    >
-                                        {genre}
-                                    </span>
-                                ))}
-                            </div>
+                            {displayData.genres.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {displayData.genres.map((genre, index) => {
+                                    // Generate consistent colors based on genre name hash
+                                    const colors = [
+                                        "bg-blue-600 text-white",
+                                        "bg-green-600 text-white", 
+                                        "bg-purple-600 text-white",
+                                        "bg-red-600 text-white",
+                                        "bg-yellow-600 text-white",
+                                        "bg-indigo-600 text-white",
+                                        "bg-pink-600 text-white",
+                                        "bg-teal-600 text-white"
+                                    ];
+                                    
+                                    // Simple hash function for consistent colors
+                                    let hash = 0;
+                                    for (let i = 0; i < genre.length; i++) {
+                                        hash = ((hash << 5) - hash) + genre.charCodeAt(i);
+                                        hash = hash & hash; // Convert to 32-bit integer
+                                    }
+                                    const colorIndex = Math.abs(hash) % colors.length;
+                                    
+                                    return (
+                                        <span
+                                            key={genre}
+                                            className={`px-3 py-1 rounded-full text-sm font-medium ${colors[colorIndex]}`}
+                                        >
+                                            {genre}
+                                        </span>
+                                    );
+                                    })}
+                                </div>
+                            )}
 
                             {/* Rating and ESRB */}
                             <div className="flex items-center gap-6 mb-6">
@@ -408,21 +431,26 @@ export const GameDetail: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                         {displayData.screenshots.map((screenshot) => (
                                             <div
                                                 key={screenshot.id}
-                                                className="aspect-video bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:bg-slate-700 transition-colors cursor-pointer"
+                                                className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:bg-slate-700 transition-colors cursor-pointer"
                                                 title={screenshot.title}
                                             >
                                                 {screenshot.url.startsWith('https:') ? (
                                                     <img 
                                                         src={screenshot.url} 
                                                         alt={screenshot.title}
-                                                        className="w-full h-full object-cover"
+                                                        className="w-full h-auto object-contain"
+                                                        style={{
+                                                            aspectRatio: screenshot.width && screenshot.height 
+                                                                ? `${screenshot.width} / ${screenshot.height}` 
+                                                                : 'auto'
+                                                        }}
                                                     />
                                                 ) : (
-                                                    <div className="flex items-center justify-center text-4xl h-full">
+                                                    <div className="flex items-center justify-center text-4xl aspect-video">
                                                         {screenshot.url}
                                                     </div>
                                                 )}
