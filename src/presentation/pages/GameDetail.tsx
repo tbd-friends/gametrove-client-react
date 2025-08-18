@@ -3,7 +3,8 @@ import { ArrowLeft, Star, Edit, Trash2, AlertCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { slugToDisplayName } from "../utils/slugUtils";
-import { createGameApiService } from "../../infrastructure/api";
+import { createGameApiService, createIgdbApiService } from "../../infrastructure/api";
+import type { IgdbGameDetails } from "../../infrastructure/api/IgdbApiService";
 import { useAuthService } from "../hooks/useAuthService";
 import type { Game } from "../../domain/models";
 import { mapApiConditionToGameCondition } from "../../domain/models/GameCopy";
@@ -15,6 +16,12 @@ export const GameDetail: React.FC = () => {
     const [game, setGame] = useState<Game | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // IGDB details state
+    const [igdbDetails, setIgdbDetails] = useState<IgdbGameDetails | null>(null);
+    const [igdbLoading, setIgdbLoading] = useState(false);
+    const [igdbError, setIgdbError] = useState<string | null>(null);
+    
     const authService = useAuthService();
 
     // Load game data from API
@@ -49,6 +56,33 @@ export const GameDetail: React.FC = () => {
         loadGameData();
     }, [gameId, authService.isAuthenticated, authService.isLoading]);
 
+    // Load IGDB details when game has igdbGameId
+    useEffect(() => {
+        async function loadIgdbDetails() {
+            if (!game?.igdbGameId || !authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setIgdbLoading(true);
+                setIgdbError(null);
+
+                const igdbApiService = createIgdbApiService(authService);
+                const details = await igdbApiService.getGameDetails(game.igdbGameId);
+                
+                setIgdbDetails(details);
+                console.log('✅ Loaded IGDB details:', details);
+            } catch (err) {
+                console.error('❌ Failed to load IGDB details:', err);
+                setIgdbError(err instanceof Error ? err.message : 'Failed to load IGDB details');
+            } finally {
+                setIgdbLoading(false);
+            }
+        }
+
+        loadIgdbDetails();
+    }, [game?.igdbGameId, authService.isAuthenticated, authService.isLoading]);
+
     // Merge real game data with placeholder data where needed
     const displayData = React.useMemo(() => {
         if (!game) return null;
@@ -75,9 +109,15 @@ export const GameDetail: React.FC = () => {
             reviewCount: 245,
             esrb: "E",
             genres: ["Adventure"], // TODO: Add when available in API
-            synopsis: "Game details coming soon. This information will be available once we integrate with external game databases.",
+            synopsis: igdbDetails?.summary || "Game details coming soon. This information will be available once we integrate with external game databases.",
             coverImage: "🎮",
-            screenshots: [
+            screenshots: igdbDetails?.screenshots?.map((screenshot, index) => ({
+                id: index + 1,
+                url: `https:${screenshot.url}`,
+                title: `Screenshot ${index + 1}`,
+                width: screenshot.width,
+                height: screenshot.height
+            })) || [
                 { id: 1, url: "🌴", title: "Screenshot 1" },
                 { id: 2, url: "❄️", title: "Screenshot 2" },
                 { id: 3, url: "🏜️", title: "Screenshot 3" },
@@ -93,7 +133,7 @@ export const GameDetail: React.FC = () => {
                 ? mapApiConditionToGameCondition(game.copies[0].condition)
                 : "Unknown"
         };
-    }, [game]);
+    }, [game, igdbDetails]);
 
     // Create breadcrumbs based on routing context
     const breadcrumbItems = React.useMemo(() => {
@@ -242,7 +282,24 @@ export const GameDetail: React.FC = () => {
                             <div className="mb-8">
                                 <h2 className="text-2xl font-bold text-white mb-4">Synopsis</h2>
                                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                                    <p className="text-gray-300 leading-relaxed">{displayData.synopsis}</p>
+                                    {!game?.igdbGameId ? (
+                                        <div className="text-center py-8">
+                                            <div className="text-gray-400 text-lg mb-3">📚</div>
+                                            <p className="text-gray-400 mb-2">No synopsis available</p>
+                                            <p className="text-gray-500 text-sm">Link this game to IGDB to get detailed synopsis and information</p>
+                                        </div>
+                                    ) : igdbLoading ? (
+                                        <div className="flex items-center gap-3 text-gray-400">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-500 border-t-transparent"></div>
+                                            Loading enhanced details...
+                                        </div>
+                                    ) : igdbError ? (
+                                        <div className="text-amber-400 text-sm mb-2">
+                                            ⚠️ Could not load enhanced details from IGDB
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-300 leading-relaxed">{displayData.synopsis}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -297,18 +354,45 @@ export const GameDetail: React.FC = () => {
 
                             {/* Screenshots */}
                             <div className="mb-8">
-                                <h2 className="text-2xl font-bold text-white mb-4">Screenshots</h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {displayData.screenshots.map((screenshot) => (
-                                        <div
-                                            key={screenshot.id}
-                                            className="aspect-video bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-4xl hover:bg-slate-700 transition-colors cursor-pointer"
-                                            title={screenshot.title}
-                                        >
-                                            {screenshot.url}
+                                <h2 className="text-2xl font-bold text-white mb-4">
+                                    Screenshots
+                                    {igdbLoading && game?.igdbGameId && (
+                                        <span className="ml-2 text-sm text-gray-400 font-normal">
+                                            (Loading enhanced screenshots...)
+                                        </span>
+                                    )}
+                                </h2>
+                                {!game?.igdbGameId ? (
+                                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+                                        <div className="text-center">
+                                            <div className="text-gray-400 text-4xl mb-4">🖼️</div>
+                                            <p className="text-gray-400 mb-2">No screenshots available</p>
+                                            <p className="text-gray-500 text-sm">Link this game to IGDB to get screenshots and media</p>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {displayData.screenshots.map((screenshot) => (
+                                            <div
+                                                key={screenshot.id}
+                                                className="aspect-video bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:bg-slate-700 transition-colors cursor-pointer"
+                                                title={screenshot.title}
+                                            >
+                                                {screenshot.url.startsWith('https:') ? (
+                                                    <img 
+                                                        src={screenshot.url} 
+                                                        alt={screenshot.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex items-center justify-center text-4xl h-full">
+                                                        {screenshot.url}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                 </>
             )}
