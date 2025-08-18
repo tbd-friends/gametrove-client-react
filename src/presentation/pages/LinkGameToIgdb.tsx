@@ -6,6 +6,7 @@ import { useIgdbSearch } from "../hooks";
 import type { IgdbGame, Game } from "../../domain/models";
 import { IgdbUtils } from "../../domain/models";
 import { createGameApiService } from "../../infrastructure/api";
+import type { LinkGameToIgdbRequest } from "../../infrastructure/api";
 import { useAuthService } from "../hooks/useAuthService";
 
 export const LinkGameToIgdb: React.FC = () => {
@@ -110,7 +111,7 @@ export const LinkGameToIgdb: React.FC = () => {
     };
 
     const handleLinkGame = async () => {
-        if (!selectedGame || !game) {
+        if (!selectedGame || !gameId) {
             console.error('Missing required data for linking game');
             return;
         }
@@ -121,14 +122,15 @@ export const LinkGameToIgdb: React.FC = () => {
 
             const gameApiService = createGameApiService(authService);
             
-            // TODO: Implement the actual link API call
-            console.log('🔗 Linking game:', game.id, 'to IGDB game:', selectedGame.id);
+            console.log('🔗 Linking game:', gameId, 'to IGDB game:', selectedGame.id);
             
-            // Simulate API call for now
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Make the actual API call to link the game
+            const linkedGame = await gameApiService.linkGameToIgdb(gameId, {
+                igdbGameId: selectedGame.id
+            });
             
-            console.log('✅ Game linked successfully');
-            navigate(`/collection/game/${game.id}`);
+            console.log('✅ Game linked successfully:', linkedGame);
+            navigate(`/collection/game/${gameId}`);
         } catch (error) {
             console.error('❌ Failed to link game:', error);
             setLinkError(error instanceof Error ? error.message : 'Failed to link game');

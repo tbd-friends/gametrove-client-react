@@ -22,6 +22,10 @@ export interface SaveGameRequest {
     igdbGameId?: number;
 }
 
+export interface LinkGameToIgdbRequest {
+    igdbGameId: number;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
@@ -32,6 +36,8 @@ export interface GameApiService {
     checkGameExists(platformId: string, title: string): Promise<boolean>;
 
     saveGame(request: SaveGameRequest): Promise<Game>;
+
+    linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<Game>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -234,6 +240,39 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 throw new Error('Invalid response format from save game API');
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
+                throw error;
+            }
+        },
+
+        async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<Game> {
+            try {
+                console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
+                
+                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
+                    `${gamesEndpoint}/${gameId}/link`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(request),
+                    }
+                );
+                
+                if ('success' in response && response.success) {
+                    console.log('✅ Game linked to IGDB successfully:', response.data);
+                    return response.data;
+                }
+                
+                // Handle direct Game response (fallback)
+                if ('id' in response) {
+                    console.log('✅ Game linked to IGDB successfully:', response);
+                    return response as Game;
+                }
+                
+                throw new Error('Invalid response format from link game API');
+            } catch (error) {
+                console.error('❌ Failed to link game to IGDB:', error);
                 throw error;
             }
         }
@@ -460,6 +499,39 @@ export function createGameApiServiceWithConfig(
                 throw new Error('Invalid response format from save game API');
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
+                throw error;
+            }
+        },
+
+        async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<Game> {
+            try {
+                console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
+                
+                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
+                    `${gamesEndpoint}/${gameId}/link`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(request),
+                    }
+                );
+                
+                if ('success' in response && response.success) {
+                    console.log('✅ Game linked to IGDB successfully:', response.data);
+                    return response.data;
+                }
+                
+                // Handle direct Game response (fallback)
+                if ('id' in response) {
+                    console.log('✅ Game linked to IGDB successfully:', response);
+                    return response as Game;
+                }
+                
+                throw new Error('Invalid response format from link game API');
+            } catch (error) {
+                console.error('❌ Failed to link game to IGDB:', error);
                 throw error;
             }
         }

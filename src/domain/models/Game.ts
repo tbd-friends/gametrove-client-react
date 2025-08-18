@@ -27,6 +27,9 @@ export interface Game {
 
     /** Array of physical copies in user's collection */
     copies: GameCopy[] | null;
+
+    /** IGDB game ID if linked to IGDB */
+    igdbGameId?: number | null;
 }
 
 /**
