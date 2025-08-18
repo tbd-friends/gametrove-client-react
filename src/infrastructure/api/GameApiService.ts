@@ -16,6 +16,12 @@ export interface PaginatedGamesResult {
     hasMore: boolean;
 }
 
+export interface SaveGameRequest {
+    name: string;
+    platformIdentifier: string;
+    igdbGameId?: number;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
@@ -24,6 +30,8 @@ export interface GameApiService {
     searchGames(query: string): Promise<Game[]>;
 
     checkGameExists(platformId: string, title: string): Promise<boolean>;
+
+    saveGame(request: SaveGameRequest): Promise<Game>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -194,6 +202,39 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 console.error('Error checking if game exists:', error);
                 // If there's an error, assume game doesn't exist to allow proceeding
                 return false;
+            }
+        },
+
+        async saveGame(request: SaveGameRequest): Promise<Game> {
+            try {
+                console.log('💾 Saving game to collection:', request);
+                
+                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
+                    `${gamesEndpoint}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(request),
+                    }
+                );
+                
+                if ('success' in response && response.success) {
+                    console.log('✅ Game saved successfully:', response.data);
+                    return response.data;
+                }
+                
+                // Handle direct Game response (fallback)
+                if ('id' in response) {
+                    console.log('✅ Game saved successfully:', response);
+                    return response as Game;
+                }
+                
+                throw new Error('Invalid response format from save game API');
+            } catch (error) {
+                console.error('❌ Failed to save game:', error);
+                throw error;
             }
         }
     };
@@ -387,6 +428,39 @@ export function createGameApiServiceWithConfig(
                 console.error('Error checking if game exists:', error);
                 // If there's an error, assume game doesn't exist to allow proceeding
                 return false;
+            }
+        },
+
+        async saveGame(request: SaveGameRequest): Promise<Game> {
+            try {
+                console.log('💾 Saving game to collection:', request);
+                
+                const response = await makeAuthenticatedRequest<{ success: boolean; data: Game }>(
+                    `${gamesEndpoint}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(request),
+                    }
+                );
+                
+                if ('success' in response && response.success) {
+                    console.log('✅ Game saved successfully:', response.data);
+                    return response.data;
+                }
+                
+                // Handle direct Game response (fallback)
+                if ('id' in response) {
+                    console.log('✅ Game saved successfully:', response);
+                    return response as Game;
+                }
+                
+                throw new Error('Invalid response format from save game API');
+            } catch (error) {
+                console.error('❌ Failed to save game:', error);
+                throw error;
             }
         }
     };

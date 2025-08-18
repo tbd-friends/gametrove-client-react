@@ -7,6 +7,7 @@ import { useIgdbSearch } from "../hooks";
 import type { Platform, IgdbGame } from "../../domain/models";
 import { IgdbUtils } from "../../domain/models";
 import { createGameApiService } from "../../infrastructure/api";
+import type { SaveGameRequest } from "../../infrastructure/api/GameApiService";
 import { useAuthService } from "../hooks/useAuthService";
 
 export const AddGame: React.FC = () => {
@@ -20,6 +21,10 @@ export const AddGame: React.FC = () => {
     // Duplicate game detection state
     const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
     const [gameExists, setGameExists] = useState(false);
+    
+    // Save game state
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     
     // Use IGDB search hook
     const { results: searchResults, loading: isSearching, error: searchError, hasSearched, searchGames, clearResults } = useIgdbSearch();
@@ -104,10 +109,36 @@ export const AddGame: React.FC = () => {
         setSelectedGame(null); // Clear selection when going back to search
     };
 
-    const handleSaveGame = () => {
-        console.log('Saving game:', selectedGame);
-        // TODO: Save game to collection
-        navigate('/collection');
+    const handleSaveGame = async () => {
+        if (!selectedGame || !selectedPlatform) {
+            console.error('Missing required data for saving game');
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            setSaveError(null);
+
+            const gameApiService = createGameApiService(authService);
+            
+            const saveRequest: SaveGameRequest = {
+                name: selectedGame.name,
+                platformIdentifier: selectedPlatform.id, // Use platform.id, NOT igdbPlatformId
+                igdbGameId: selectedGame.id > 0 ? selectedGame.id : undefined // Only include if IGDB game selected (positive ID)
+            };
+
+            console.log('🎮 Saving game with request:', saveRequest);
+
+            const savedGame = await gameApiService.saveGame(saveRequest);
+            
+            console.log('✅ Game saved successfully:', savedGame);
+            navigate('/collection');
+        } catch (error) {
+            console.error('❌ Failed to save game:', error);
+            setSaveError(error instanceof Error ? error.message : 'Failed to save game');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
 
@@ -452,11 +483,24 @@ export const AddGame: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Save Error */}
+                        {saveError && (
+                            <div className="mb-6 bg-red-900/20 border border-red-500 rounded-lg p-4">
+                                <p className="text-red-400 font-medium">Failed to save game</p>
+                                <p className="text-red-300 text-sm mt-1">{saveError}</p>
+                            </div>
+                        )}
+
                         {/* Bottom Actions */}
                         <div className="flex items-center justify-between pt-6 border-t border-slate-600">
                             <button
                                 onClick={handleBackToSearch}
-                                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                                disabled={isSaving}
+                                className={`flex items-center gap-2 transition-colors ${
+                                    isSaving 
+                                        ? 'text-gray-600 cursor-not-allowed' 
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
                             >
                                 <ArrowLeft size={16} />
                                 Back to Search
@@ -464,10 +508,24 @@ export const AddGame: React.FC = () => {
 
                             <button
                                 onClick={handleSaveGame}
-                                className="flex items-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors font-medium"
+                                disabled={isSaving}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors font-medium ${
+                                    isSaving
+                                        ? 'bg-slate-600 text-gray-400 cursor-not-allowed'
+                                        : 'bg-cyan-500 text-white hover:bg-cyan-600'
+                                }`}
                             >
-                                <Save size={16} />
-                                Save Game
+                                {isSaving ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={16} />
+                                        Save Game
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

@@ -20,12 +20,37 @@ export interface IgdbGameResult {
 }
 
 /**
+ * Enhanced IGDB game details interface for detailed game information
+ */
+export interface IgdbGameDetails {
+    id: number;
+    name: string;
+    summary?: string;
+    platforms?: Array<{
+        name: string;
+    }>;
+    genres?: Array<{
+        name: string;
+    }>;
+    themes?: Array<{
+        name: string;
+    }>;
+    screenshots?: Array<{
+        imageId: string;
+        url: string;
+        height: number;
+        width: number;
+    }>;
+}
+
+/**
  * IGDB API service for game search and platform functionality
  */
 export interface IgdbApiService {
     searchGames(term: string, platformId: number): Promise<IgdbGameResult[]>;
     getPlatforms(): Promise<IgdbPlatform[]>;
     clearPlatformsCache(): void;
+    getGameDetails(igdbGameId: number): Promise<IgdbGameDetails>;
 }
 
 /**
@@ -150,6 +175,22 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
                 timestamp: 0,
                 ttl: platformCache.ttl
             };
+        },
+
+        async getGameDetails(igdbGameId: number): Promise<IgdbGameDetails> {
+            try {
+                console.log('🎮 Fetching IGDB game details for ID:', igdbGameId);
+                
+                const gameDetails = await makeAuthenticatedRequest<IgdbGameDetails>(
+                    `/api/igdb/games/${igdbGameId}`
+                );
+                
+                console.log('✅ Loaded IGDB game details:', gameDetails);
+                return gameDetails;
+            } catch (error) {
+                console.error('Failed to fetch IGDB game details:', error);
+                throw error;
+            }
         }
     };
 }
