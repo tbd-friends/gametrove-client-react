@@ -70,7 +70,7 @@ export const GameDetail: React.FC = () => {
         }
 
         loadGameData();
-    }, [gameId, authService.isAuthenticated]);
+    }, [gameId, authService.isAuthenticated, authService]);
 
     // Load IGDB details when game has igdbGameId
     useEffect(() => {
@@ -97,7 +97,7 @@ export const GameDetail: React.FC = () => {
         }
 
         loadIgdbDetails();
-    }, [game?.igdbGameId, authService.isAuthenticated]);
+    }, [game?.igdbGameId, authService.isAuthenticated, authService]);
 
     // Merge real game data with placeholder data where needed
     const displayData = React.useMemo(() => {
@@ -308,7 +308,7 @@ export const GameDetail: React.FC = () => {
                             {/* Genre Tags */}
                             {displayData.genres.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                    {displayData.genres.map((genre, index) => {
+                                    {displayData.genres.map((genre) => {
                                     // Generate consistent colors based on genre name hash
                                     const colors = [
                                         "bg-blue-600 text-white",

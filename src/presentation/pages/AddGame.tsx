@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, ChevronRight, Loader2, FileText, Plus, Save } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, FileText, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { PlatformCombobox } from "../components/forms/PlatformCombobox";

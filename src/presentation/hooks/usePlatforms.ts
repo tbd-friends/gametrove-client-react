@@ -48,7 +48,7 @@ export function usePlatforms(): UsePlatformsReturn {
     }
 
     loadPlatforms();
-  }, [authService.isAuthenticated]);
+  }, [authService.isAuthenticated, authService]);
 
   // Memoized search function for filtering platforms
   const searchPlatforms = useMemo(() => {
