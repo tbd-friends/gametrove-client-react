@@ -4,11 +4,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { Breadcrumb } from "../components/common";
 import { PlatformCombobox } from "../components/forms/PlatformCombobox";
+import { PublisherCombobox } from "../components/forms/PublisherCombobox";
 import { slugToDisplayName } from "../utils/slugUtils";
 import { createGameApiService, createIgdbApiService } from "../../infrastructure/api";
 import type { IgdbGameDetails } from "../../infrastructure/api/IgdbApiService";
 import { useAuthService } from "../hooks/useAuthService";
-import type { Game, Platform } from "../../domain/models";
+import type { Game, Platform, Publisher } from "../../domain/models";
 import { mapApiConditionToGameCondition } from "../../domain/models/GameCopy";
 
 export const GameDetail: React.FC = () => {
@@ -27,10 +28,12 @@ export const GameDetail: React.FC = () => {
     // Edit dialog state
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editForm, setEditForm] = useState({
-        title: '',
-        publisher: ''
+        title: ''
     });
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+    const [selectedPublisher, setSelectedPublisher] = useState<Publisher | null>(null);
+    const [editLoading, setEditLoading] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
     
     const authService = useAuthService();
 
@@ -53,10 +56,10 @@ export const GameDetail: React.FC = () => {
                     setGame(gameData);
                     // Initialize edit form with current game data
                     setEditForm({
-                        title: gameData.description,
-                        publisher: gameData.publisher?.description || ''
+                        title: gameData.description
                     });
                     setSelectedPlatform(gameData.platform);
+                    setSelectedPublisher(gameData.publisher);
                     console.log('✅ Game data loaded:', gameData);
                 } else {
                     setError('Game not found');
@@ -174,10 +177,10 @@ export const GameDetail: React.FC = () => {
         // Ensure form is populated with current game data when dialog opens
         if (game) {
             setEditForm({
-                title: game.description,
-                publisher: game.publisher?.description || ''
+                title: game.description
             });
             setSelectedPlatform(game.platform);
+            setSelectedPublisher(game.publisher);
         }
         setIsEditDialogOpen(true);
     };
@@ -189,24 +192,54 @@ export const GameDetail: React.FC = () => {
         }));
     };
 
-    const handleEditSubmit = () => {
-        // TODO: Implement API call to update game
-        console.log("Updating game with:", {
-            ...editForm,
-            platform: selectedPlatform
-        });
-        setIsEditDialogOpen(false);
+    const handleEditSubmit = async () => {
+        if (!gameId || !selectedPlatform || !selectedPublisher) {
+            setEditError('Missing required fields');
+            return;
+        }
+
+        try {
+            setEditLoading(true);
+            setEditError(null);
+
+            const gameApiService = createGameApiService(authService);
+            await gameApiService.updateGame(gameId, {
+                name: editForm.title.trim(),
+                platformId: selectedPlatform.id,
+                publisherId: selectedPublisher.id
+            });
+
+            console.log('✅ Game updated successfully');
+            setIsEditDialogOpen(false);
+            
+            // Reload game data to reflect changes
+            const updatedGame = await gameApiService.getGameById(gameId);
+            if (updatedGame) {
+                setGame(updatedGame);
+                setEditForm({
+                    title: updatedGame.description
+                });
+                setSelectedPlatform(updatedGame.platform);
+                setSelectedPublisher(updatedGame.publisher);
+            }
+        } catch (error) {
+            console.error('❌ Failed to update game:', error);
+            setEditError(error instanceof Error ? error.message : 'Failed to update game');
+        } finally {
+            setEditLoading(false);
+        }
     };
 
     const handleEditCancel = () => {
         // Reset form to original values
         if (game) {
             setEditForm({
-                title: game.description,
-                publisher: game.publisher?.description || ''
+                title: game.description
             });
             setSelectedPlatform(game.platform);
+            setSelectedPublisher(game.publisher);
         }
+        setEditError(null);
         setIsEditDialogOpen(false);
     };
 
@@ -630,7 +663,8 @@ export const GameDetail: React.FC = () => {
                                             type="text"
                                             value={editForm.title}
                                             onChange={(e) => handleEditFormChange('title', e.target.value)}
-                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            disabled={editLoading}
+                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                                             placeholder="Enter game title"
                                         />
                                     </div>
@@ -644,6 +678,7 @@ export const GameDetail: React.FC = () => {
                                             value={selectedPlatform}
                                             onChange={setSelectedPlatform}
                                             placeholder="Select a platform..."
+                                            disabled={editLoading}
                                         />
                                     </div>
 
@@ -652,28 +687,42 @@ export const GameDetail: React.FC = () => {
                                         <label className="block text-sm font-medium text-gray-300 mb-2">
                                             Publisher
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={editForm.publisher}
-                                            onChange={(e) => handleEditFormChange('publisher', e.target.value)}
-                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                            placeholder="Enter publisher"
+                                        <PublisherCombobox
+                                            value={selectedPublisher}
+                                            onChange={setSelectedPublisher}
+                                            placeholder="Select a publisher..."
+                                            disabled={editLoading}
                                         />
                                     </div>
                                 </div>
+
+                                {/* Error Display */}
+                                {editError && (
+                                    <div className="mt-4 p-3 bg-red-900/20 border border-red-500 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle className="text-red-400 flex-shrink-0" size={16} />
+                                            <p className="text-red-400 text-sm">{editError}</p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Dialog Actions */}
                                 <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-700">
                                     <button
                                         onClick={handleEditCancel}
-                                        className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                                        disabled={editLoading}
+                                        className="px-4 py-2 text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         onClick={handleEditSubmit}
-                                        className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors"
+                                        disabled={editLoading || !editForm.title.trim() || !selectedPlatform || !selectedPublisher}
+                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cyan-600"
                                     >
+                                        {editLoading && (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                        )}
                                         Save Changes
                                     </button>
                                 </div>

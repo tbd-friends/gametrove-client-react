@@ -26,6 +26,12 @@ export interface LinkGameToIgdbRequest {
     igdbGameId: number;
 }
 
+export interface UpdateGameRequest {
+    name: string;
+    platformId: string;
+    publisherId: string;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
@@ -36,6 +42,8 @@ export interface GameApiService {
     checkGameExists(platformId: string, title: string): Promise<boolean>;
 
     saveGame(request: SaveGameRequest): Promise<string>;
+
+    updateGame(gameId: string, request: UpdateGameRequest): Promise<void>;
 
     linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void>;
 }
@@ -237,6 +245,45 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
+                throw error;
+            }
+        },
+
+        async updateGame(gameId: string, request: UpdateGameRequest): Promise<void> {
+            try {
+                console.log('📝 Updating game:', gameId, 'with data:', request);
+
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    console.log('✅ Game updated successfully');
+                    return;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to update this game.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Game not found.');
+                }
+                if (response.status === 409) {
+                    throw new Error('A game with this title already exists on this platform.');
+                }
+
+                throw new Error(`Failed to update game: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                console.error('❌ Failed to update game:', error);
                 throw error;
             }
         },
@@ -506,6 +553,45 @@ export function createGameApiServiceWithConfig(
                 throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
+                throw error;
+            }
+        },
+
+        async updateGame(gameId: string, request: UpdateGameRequest): Promise<void> {
+            try {
+                console.log('📝 Updating game:', gameId, 'with data:', request);
+
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    console.log('✅ Game updated successfully');
+                    return;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to update this game.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Game not found.');
+                }
+                if (response.status === 409) {
+                    throw new Error('A game with this title already exists on this platform.');
+                }
+
+                throw new Error(`Failed to update game: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                console.error('❌ Failed to update game:', error);
                 throw error;
             }
         },
