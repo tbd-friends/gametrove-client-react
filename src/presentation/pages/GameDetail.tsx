@@ -1,30 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
-import { Breadcrumb } from "../components/common";
-import { PlatformCombobox } from "../components/forms/PlatformCombobox";
-import { PublisherCombobox } from "../components/forms/PublisherCombobox";
-import { slugToDisplayName } from "../utils/slugUtils";
-import { createGameApiService, createIgdbApiService } from "../../infrastructure/api";
-import type { IgdbGameDetails } from "../../infrastructure/api/IgdbApiService";
-import { useAuthService } from "../hooks/useAuthService";
-import type { Game, Platform, Publisher } from "../../domain/models";
-import { mapApiConditionToGameCondition } from "../../domain/models/GameCopy";
+import React, {useState, useEffect} from "react";
+import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link} from "lucide-react";
+import {useNavigate, useParams} from "react-router-dom";
+import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from '@headlessui/react';
+import {Breadcrumb} from "../components/common";
+import {PlatformCombobox} from "../components/forms";
+import {PublisherCombobox} from "../components/forms/PublisherCombobox";
+import {slugToDisplayName} from "../utils/slugUtils";
+import {createGameApiService, createIgdbApiService} from "../../infrastructure/api";
+import type {IgdbGameDetails} from "../../infrastructure/api";
+import {useAuthService} from "../hooks/useAuthService";
+import type {Game, Platform, Publisher, mapApiConditionToGameCondition} from "../../domain/models";
 
 export const GameDetail: React.FC = () => {
     const navigate = useNavigate();
-    const { gameId, consoleName } = useParams<{ gameId: string; consoleName?: string }>();
+    const {gameId, consoleName} = useParams<{ gameId: string; consoleName?: string }>();
     const [activeTab, setActiveTab] = useState<'details' | 'copies'>('details');
     const [game, setGame] = useState<Game | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     // IGDB details state
     const [igdbDetails, setIgdbDetails] = useState<IgdbGameDetails | null>(null);
     const [igdbLoading, setIgdbLoading] = useState(false);
     const [igdbError, setIgdbError] = useState<string | null>(null);
-    
+
     // Edit dialog state
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -34,7 +33,7 @@ export const GameDetail: React.FC = () => {
     const [selectedPublisher, setSelectedPublisher] = useState<Publisher | null>(null);
     const [editLoading, setEditLoading] = useState(false);
     const [editError, setEditError] = useState<string | null>(null);
-    
+
     const authService = useAuthService();
 
     // Load game data from API
@@ -48,10 +47,10 @@ export const GameDetail: React.FC = () => {
                 setLoading(true);
                 setError(null);
                 const gameApiService = createGameApiService(authService);
-                
+
                 console.log('🎮 Loading game details for ID:', gameId);
                 const gameData = await gameApiService.getGameById(gameId);
-                
+
                 if (gameData) {
                     setGame(gameData);
                     // Initialize edit form with current game data
@@ -88,7 +87,7 @@ export const GameDetail: React.FC = () => {
 
                 const igdbApiService = createIgdbApiService(authService);
                 const details = await igdbApiService.getGameDetails(game.igdbGameId);
-                
+
                 setIgdbDetails(details);
                 console.log('✅ Loaded IGDB details:', details);
             } catch (err) {
@@ -105,9 +104,9 @@ export const GameDetail: React.FC = () => {
     // Merge real game data with placeholder data where needed
     const displayData = React.useMemo(() => {
         if (!game) return null;
-        
+
         // Calculate total estimated value from copies
-        const totalEstimatedValue = game.copies 
+        const totalEstimatedValue = game.copies
             ? game.copies.reduce((sum, copy) => sum + (copy.estimatedValue || 0), 0)
             : 0;
 
@@ -120,7 +119,7 @@ export const GameDetail: React.FC = () => {
             totalCopies: game.copyCount,
             estimatedValue: totalEstimatedValue,
             copies: game.copies || [],
-            
+
             // Placeholder data for missing fields
             developer: "Unknown Developer", // TODO: Add when available in API
             year: new Date().getFullYear(), // TODO: Parse from API when available
@@ -135,20 +134,21 @@ export const GameDetail: React.FC = () => {
             coverImage: "🎮",
             screenshots: igdbDetails?.screenshots?.map((screenshot, index) => ({
                 id: index + 1,
-                url: `https:${screenshot.url}`,
+                thumbnail: `https:${screenshot.thumbnail}`,
+                medium: `https:${screenshot.medium}`,
                 title: `Screenshot ${index + 1}`,
                 width: screenshot.width,
                 height: screenshot.height
             })) || [
-                { id: 1, url: "🌴", title: "Screenshot 1" },
-                { id: 2, url: "❄️", title: "Screenshot 2" },
-                { id: 3, url: "🏜️", title: "Screenshot 3" },
-                { id: 4, url: "🌊", title: "Screenshot 4" }
+                {id: 1, thumbnail: "🌴", medium: "🌴", title: "Screenshot 1"},
+                {id: 2, thumbnail: "❄️", medium: "❄️", title: "Screenshot 2"},
+                {id: 3, thumbnail: "🏜️", medium: "🏜️", title: "Screenshot 3"},
+                {id: 4, thumbnail: "🌊", medium: "🌊", title: "Screenshot 4"}
             ],
             releaseDate: "Release date coming soon",
-            dateAdded: game.copies && game.copies.length > 0 
-                ? new Date(game.copies[0].purchasedDate).toLocaleDateString('en-US', { 
-                    year: 'numeric', month: 'long', day: 'numeric' 
+            dateAdded: game.copies && game.copies.length > 0
+                ? new Date(game.copies[0].purchasedDate).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
                 })
                 : "Unknown",
             condition: game.copies && game.copies.length > 0
@@ -160,16 +160,16 @@ export const GameDetail: React.FC = () => {
     // Create breadcrumbs based on routing context
     const breadcrumbItems = React.useMemo(() => {
         const gameTitle = displayData?.title || "Loading...";
-        
+
         return consoleName
             ? [
-                { label: "My Collection", path: "/collection" },
-                { label: slugToDisplayName(consoleName), path: `/collection/console/${consoleName}` },
-                { label: gameTitle, path: "" }
+                {label: "My Collection", path: "/collection"},
+                {label: slugToDisplayName(consoleName), path: `/collection/console/${consoleName}`},
+                {label: gameTitle, path: ""}
             ]
             : [
-                { label: "My Collection", path: "/collection" },
-                { label: gameTitle, path: "" }
+                {label: "My Collection", path: "/collection"},
+                {label: gameTitle, path: ""}
             ];
     }, [consoleName, displayData?.title]);
 
@@ -211,7 +211,7 @@ export const GameDetail: React.FC = () => {
 
             console.log('✅ Game updated successfully');
             setIsEditDialogOpen(false);
-            
+
             // Reload game data to reflect changes
             const updatedGame = await gameApiService.getGameById(gameId);
             if (updatedGame) {
@@ -258,7 +258,7 @@ export const GameDetail: React.FC = () => {
     const handleLinkToIgdb = () => {
         if (gameId && game) {
             navigate(`/collection/game/${gameId}/link-igdb`, {
-                state: { 
+                state: {
                     gameTitle: game.description,
                     igdbPlatformId: game.platform.igdbPlatformId, // May be undefined for older games
                     platformName: game.platform.description
@@ -270,7 +270,7 @@ export const GameDetail: React.FC = () => {
     return (
         <div className="w-full">
             {/* Breadcrumb Navigation */}
-            <Breadcrumb items={breadcrumbItems} />
+            <Breadcrumb items={breadcrumbItems}/>
 
             {/* Loading State */}
             {loading && (
@@ -283,7 +283,7 @@ export const GameDetail: React.FC = () => {
             {/* Error State */}
             {error && !loading && (
                 <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6 flex items-center gap-3">
-                    <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
+                    <AlertCircle className="text-red-400 flex-shrink-0" size={20}/>
                     <div>
                         <h3 className="text-red-400 font-medium">Failed to load game</h3>
                         <p className="text-gray-300 text-sm mt-1">{error}</p>
@@ -303,10 +303,12 @@ export const GameDetail: React.FC = () => {
                     {/* Game Header */}
                     <div className="flex items-start gap-6 mb-8">
                         {/* Game Cover */}
-                        <div className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-6xl flex-shrink-0 relative">
+                        <div
+                            className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-6xl flex-shrink-0 relative">
                             {displayData.coverImage}
                             {/* ESRB Rating Badge */}
-                            <div className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
+                            <div
+                                className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
                                 <span className="text-white text-xs font-bold">ESRB: {displayData.esrb}</span>
                             </div>
                         </div>
@@ -321,7 +323,7 @@ export const GameDetail: React.FC = () => {
                                         className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
                                         title="Edit game details"
                                     >
-                                        <Edit3 size={20} />
+                                        <Edit3 size={20}/>
                                     </button>
                                 </div>
                                 {!game?.igdbGameId && (
@@ -329,7 +331,7 @@ export const GameDetail: React.FC = () => {
                                         onClick={handleLinkToIgdb}
                                         className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
                                     >
-                                        <Link size={16} />
+                                        <Link size={16}/>
                                         Link to IGDB
                                     </button>
                                 )}
@@ -337,39 +339,39 @@ export const GameDetail: React.FC = () => {
                             <p className="text-gray-400 text-lg mb-4">
                                 {displayData.platform} • {displayData.publisher} • {displayData.year}
                             </p>
-                    
+
                             {/* Genre Tags */}
                             {displayData.genres.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {displayData.genres.map((genre) => {
-                                    // Generate consistent colors based on genre name hash
-                                    const colors = [
-                                        "bg-blue-600 text-white",
-                                        "bg-green-600 text-white", 
-                                        "bg-purple-600 text-white",
-                                        "bg-red-600 text-white",
-                                        "bg-yellow-600 text-white",
-                                        "bg-indigo-600 text-white",
-                                        "bg-pink-600 text-white",
-                                        "bg-teal-600 text-white"
-                                    ];
-                                    
-                                    // Simple hash function for consistent colors
-                                    let hash = 0;
-                                    for (let i = 0; i < genre.length; i++) {
-                                        hash = ((hash << 5) - hash) + genre.charCodeAt(i);
-                                        hash = hash & hash; // Convert to 32-bit integer
-                                    }
-                                    const colorIndex = Math.abs(hash) % colors.length;
-                                    
-                                    return (
-                                        <span
-                                            key={genre}
-                                            className={`px-3 py-1 rounded-full text-sm font-medium ${colors[colorIndex]}`}
-                                        >
+                                        // Generate consistent colors based on genre name hash
+                                        const colors = [
+                                            "bg-blue-600 text-white",
+                                            "bg-green-600 text-white",
+                                            "bg-purple-600 text-white",
+                                            "bg-red-600 text-white",
+                                            "bg-yellow-600 text-white",
+                                            "bg-indigo-600 text-white",
+                                            "bg-pink-600 text-white",
+                                            "bg-teal-600 text-white"
+                                        ];
+
+                                        // Simple hash function for consistent colors
+                                        let hash = 0;
+                                        for (let i = 0; i < genre.length; i++) {
+                                            hash = ((hash << 5) - hash) + genre.charCodeAt(i);
+                                            hash = hash & hash; // Convert to 32-bit integer
+                                        }
+                                        const colorIndex = Math.abs(hash) % colors.length;
+
+                                        return (
+                                            <span
+                                                key={genre}
+                                                className={`px-3 py-1 rounded-full text-sm font-medium ${colors[colorIndex]}`}
+                                            >
                                             {genre}
                                         </span>
-                                    );
+                                        );
                                     })}
                                 </div>
                             )}
@@ -377,7 +379,7 @@ export const GameDetail: React.FC = () => {
                             {/* Rating and ESRB */}
                             <div className="flex items-center gap-6 mb-6">
                                 <div className="flex items-center gap-2">
-                                    <Star className="text-yellow-400 fill-current" size={20} />
+                                    <Star className="text-yellow-400 fill-current" size={20}/>
                                     <span className="text-white font-semibold">{displayData.rating}</span>
                                     <span className="text-gray-400">({displayData.reviewCount} reviews)</span>
                                 </div>
@@ -425,18 +427,20 @@ export const GameDetail: React.FC = () => {
                                         <div className="text-center py-8">
                                             <div className="text-gray-400 text-lg mb-3">📚</div>
                                             <p className="text-gray-400 mb-2">No Synopsis Available</p>
-                                            <p className="text-gray-500 text-sm mb-4">Link this game to IGDB to automatically populate synopsis and additional details.</p>
+                                            <p className="text-gray-500 text-sm mb-4">Link this game to IGDB to
+                                                automatically populate synopsis and additional details.</p>
                                             <button
                                                 onClick={handleLinkToIgdb}
                                                 className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors mx-auto"
                                             >
-                                                <Link size={16} />
+                                                <Link size={16}/>
                                                 Link to IGDB
                                             </button>
                                         </div>
                                     ) : igdbLoading ? (
                                         <div className="flex items-center gap-3 text-gray-400">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-500 border-t-transparent"></div>
+                                            <div
+                                                className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-500 border-t-transparent"></div>
                                             Loading enhanced details...
                                         </div>
                                     ) : igdbError ? (
@@ -480,11 +484,13 @@ export const GameDetail: React.FC = () => {
                                     <div className="space-y-3">
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Total Copies:</span>
-                                            <span className="text-green-400 font-semibold">{displayData.totalCopies}</span>
+                                            <span
+                                                className="text-green-400 font-semibold">{displayData.totalCopies}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Estimated Value:</span>
-                                            <span className="text-green-400 font-semibold">${displayData.estimatedValue.toFixed(2)}</span>
+                                            <span
+                                                className="text-green-400 font-semibold">${displayData.estimatedValue.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Date Added:</span>
@@ -513,38 +519,41 @@ export const GameDetail: React.FC = () => {
                                         <div className="text-center">
                                             <div className="text-gray-400 text-4xl mb-4">🖼️</div>
                                             <p className="text-gray-400 mb-2">No Screenshots Available</p>
-                                            <p className="text-gray-500 text-sm mb-4">Link this game to IGDB to automatically populate screenshots and media.</p>
+                                            <p className="text-gray-500 text-sm mb-4">Link this game to IGDB to
+                                                automatically populate screenshots and media.</p>
                                             <button
                                                 onClick={handleLinkToIgdb}
                                                 className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors mx-auto"
                                             >
-                                                <Link size={16} />
+                                                <Link size={16}/>
                                                 Link to IGDB
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    <div
+                                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                         {displayData.screenshots.map((screenshot) => (
                                             <div
                                                 key={screenshot.id}
                                                 className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:bg-slate-700 transition-colors cursor-pointer"
                                                 title={screenshot.title}
                                             >
-                                                {screenshot.url.startsWith('https:') ? (
-                                                    <img 
-                                                        src={screenshot.url} 
+                                                {screenshot.medium.startsWith('https:') ? (
+                                                    <img
+                                                        src={screenshot.medium}
                                                         alt={screenshot.title}
                                                         className="w-full h-auto object-contain"
                                                         style={{
-                                                            aspectRatio: screenshot.width && screenshot.height 
-                                                                ? `${screenshot.width} / ${screenshot.height}` 
+                                                            aspectRatio: screenshot.width && screenshot.height
+                                                                ? `${screenshot.width} / ${screenshot.height}`
                                                                 : 'auto'
                                                         }}
                                                     />
                                                 ) : (
-                                                    <div className="flex items-center justify-center text-4xl aspect-video">
-                                                        {screenshot.url}
+                                                    <div
+                                                        className="flex items-center justify-center text-4xl aspect-video">
+                                                        {screenshot.medium}
                                                     </div>
                                                 )}
                                             </div>
@@ -552,8 +561,8 @@ export const GameDetail: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-                </>
-            )}
+                        </>
+                    )}
 
                     {activeTab === 'copies' && (
                         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
@@ -567,9 +576,9 @@ export const GameDetail: React.FC = () => {
                                                     <h4 className="text-white font-medium">{copy.description}</h4>
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                                         mapApiConditionToGameCondition(copy.condition) === 'Complete' ? 'bg-green-600 text-white' :
-                                                        mapApiConditionToGameCondition(copy.condition) === 'New' ? 'bg-blue-600 text-white' :
-                                                        mapApiConditionToGameCondition(copy.condition) === 'Loose' ? 'bg-yellow-600 text-black' :
-                                                        'bg-gray-600 text-white'
+                                                            mapApiConditionToGameCondition(copy.condition) === 'New' ? 'bg-blue-600 text-white' :
+                                                                mapApiConditionToGameCondition(copy.condition) === 'Loose' ? 'bg-yellow-600 text-black' :
+                                                                    'bg-gray-600 text-white'
                                                     }`}>
                                                         {mapApiConditionToGameCondition(copy.condition)}
                                                     </span>
@@ -612,47 +621,48 @@ export const GameDetail: React.FC = () => {
 
                     {/* Bottom Actions */}
                     <div className="flex items-center justify-between pt-6 border-t border-slate-700">
-                <button
-                    onClick={() => {
-                        if (consoleName) {
-                            navigate(`/collection/console/${consoleName}`);
-                        } else {
-                            navigate('/collection');
-                        }
-                    }}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                >
-                    <ArrowLeft size={16} />
-                    {consoleName ? `Back to ${slugToDisplayName(consoleName)}` : 'Back to Collection'}
-                </button>
+                        <button
+                            onClick={() => {
+                                if (consoleName) {
+                                    navigate(`/collection/console/${consoleName}`);
+                                } else {
+                                    navigate('/collection');
+                                }
+                            }}
+                            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <ArrowLeft size={16}/>
+                            {consoleName ? `Back to ${slugToDisplayName(consoleName)}` : 'Back to Collection'}
+                        </button>
 
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={handleEditGame}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
-                    >
-                        <Edit size={16} />
-                        Edit Game
-                    </button>
-                    <button
-                        onClick={handleRemoveFromCollection}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
-                    >
-                        <Trash2 size={16} />
-                        Remove from Collection
-                    </button>
-                    </div>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleEditGame}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
+                            >
+                                <Edit size={16}/>
+                                Edit Game
+                            </button>
+                            <button
+                                onClick={handleRemoveFromCollection}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
+                            >
+                                <Trash2 size={16}/>
+                                Remove from Collection
+                            </button>
+                        </div>
                     </div>
 
                     {/* Edit Dialog */}
                     <Dialog open={isEditDialogOpen} onClose={handleEditCancel} className="relative z-50">
-                        <DialogBackdrop className="fixed inset-0 bg-black/50" />
+                        <DialogBackdrop className="fixed inset-0 bg-black/50"/>
                         <div className="fixed inset-0 flex items-center justify-center p-4">
-                            <DialogPanel className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-md">
+                            <DialogPanel
+                                className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-md">
                                 <DialogTitle className="text-xl font-bold text-white mb-6">
                                     Edit Game Details
                                 </DialogTitle>
-                                
+
                                 <div className="space-y-4">
                                     {/* Title Field */}
                                     <div>
@@ -700,14 +710,15 @@ export const GameDetail: React.FC = () => {
                                 {editError && (
                                     <div className="mt-4 p-3 bg-red-900/20 border border-red-500 rounded-lg">
                                         <div className="flex items-center gap-2">
-                                            <AlertCircle className="text-red-400 flex-shrink-0" size={16} />
+                                            <AlertCircle className="text-red-400 flex-shrink-0" size={16}/>
                                             <p className="text-red-400 text-sm">{editError}</p>
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Dialog Actions */}
-                                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-700">
+                                <div
+                                    className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-700">
                                     <button
                                         onClick={handleEditCancel}
                                         disabled={editLoading}
@@ -721,7 +732,8 @@ export const GameDetail: React.FC = () => {
                                         className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cyan-600"
                                     >
                                         {editLoading && (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                            <div
+                                                className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                                         )}
                                         Save Changes
                                     </button>

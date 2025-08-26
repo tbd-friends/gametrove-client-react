@@ -81,9 +81,9 @@ export interface GameDetails extends Game {
  */
 export interface GameScreenshot {
     id: string;
-    url: string;
+    thumbnail: string;
+    medium: string;
     title?: string;
-    thumbnailUrl?: string;
     width?: number;
     height?: number;
 }
