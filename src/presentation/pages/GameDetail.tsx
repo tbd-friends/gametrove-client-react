@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Star, Edit, Trash2, AlertCircle, Link } from "lucide-react";
+import { ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { Breadcrumb } from "../components/common";
+import { PlatformCombobox } from "../components/forms/PlatformCombobox";
 import { slugToDisplayName } from "../utils/slugUtils";
 import { createGameApiService, createIgdbApiService } from "../../infrastructure/api";
 import type { IgdbGameDetails } from "../../infrastructure/api/IgdbApiService";
 import { useAuthService } from "../hooks/useAuthService";
-import type { Game } from "../../domain/models";
+import type { Game, Platform } from "../../domain/models";
 import { mapApiConditionToGameCondition } from "../../domain/models/GameCopy";
 
 export const GameDetail: React.FC = () => {
@@ -21,6 +23,14 @@ export const GameDetail: React.FC = () => {
     const [igdbDetails, setIgdbDetails] = useState<IgdbGameDetails | null>(null);
     const [igdbLoading, setIgdbLoading] = useState(false);
     const [igdbError, setIgdbError] = useState<string | null>(null);
+    
+    // Edit dialog state
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editForm, setEditForm] = useState({
+        title: '',
+        publisher: ''
+    });
+    const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
     
     const authService = useAuthService();
 
@@ -41,6 +51,12 @@ export const GameDetail: React.FC = () => {
                 
                 if (gameData) {
                     setGame(gameData);
+                    // Initialize edit form with current game data
+                    setEditForm({
+                        title: gameData.description,
+                        publisher: gameData.publisher?.description || ''
+                    });
+                    setSelectedPlatform(gameData.platform);
                     console.log('✅ Game data loaded:', gameData);
                 } else {
                     setError('Game not found');
@@ -155,8 +171,43 @@ export const GameDetail: React.FC = () => {
     }, [consoleName, displayData?.title]);
 
     const handleEditGame = () => {
-        // Navigate to edit game page or open edit modal
-        console.log("Edit game:", displayData?.id);
+        // Ensure form is populated with current game data when dialog opens
+        if (game) {
+            setEditForm({
+                title: game.description,
+                publisher: game.publisher?.description || ''
+            });
+            setSelectedPlatform(game.platform);
+        }
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditFormChange = (field: keyof typeof editForm, value: string) => {
+        setEditForm(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleEditSubmit = () => {
+        // TODO: Implement API call to update game
+        console.log("Updating game with:", {
+            ...editForm,
+            platform: selectedPlatform
+        });
+        setIsEditDialogOpen(false);
+    };
+
+    const handleEditCancel = () => {
+        // Reset form to original values
+        if (game) {
+            setEditForm({
+                title: game.description,
+                publisher: game.publisher?.description || ''
+            });
+            setSelectedPlatform(game.platform);
+        }
+        setIsEditDialogOpen(false);
     };
 
     const handleRemoveFromCollection = () => {
@@ -230,7 +281,16 @@ export const GameDetail: React.FC = () => {
                         {/* Game Info */}
                         <div className="flex-1">
                             <div className="flex items-start justify-between mb-2">
-                                <h1 className="text-4xl font-bold text-white">{displayData.title}</h1>
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-4xl font-bold text-white">{displayData.title}</h1>
+                                    <button
+                                        onClick={handleEditGame}
+                                        className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                                        title="Edit game details"
+                                    >
+                                        <Edit3 size={20} />
+                                    </button>
+                                </div>
                                 {!game?.igdbGameId && (
                                     <button
                                         onClick={handleLinkToIgdb}
@@ -550,6 +610,76 @@ export const GameDetail: React.FC = () => {
                     </button>
                     </div>
                     </div>
+
+                    {/* Edit Dialog */}
+                    <Dialog open={isEditDialogOpen} onClose={handleEditCancel} className="relative z-50">
+                        <DialogBackdrop className="fixed inset-0 bg-black/50" />
+                        <div className="fixed inset-0 flex items-center justify-center p-4">
+                            <DialogPanel className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-md">
+                                <DialogTitle className="text-xl font-bold text-white mb-6">
+                                    Edit Game Details
+                                </DialogTitle>
+                                
+                                <div className="space-y-4">
+                                    {/* Title Field */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            Game Title
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editForm.title}
+                                            onChange={(e) => handleEditFormChange('title', e.target.value)}
+                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            placeholder="Enter game title"
+                                        />
+                                    </div>
+
+                                    {/* Platform Field */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            Platform
+                                        </label>
+                                        <PlatformCombobox
+                                            value={selectedPlatform}
+                                            onChange={setSelectedPlatform}
+                                            placeholder="Select a platform..."
+                                        />
+                                    </div>
+
+                                    {/* Publisher Field */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            Publisher
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editForm.publisher}
+                                            onChange={(e) => handleEditFormChange('publisher', e.target.value)}
+                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            placeholder="Enter publisher"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Dialog Actions */}
+                                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-700">
+                                    <button
+                                        onClick={handleEditCancel}
+                                        className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleEditSubmit}
+                                        className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors"
+                                    >
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </DialogPanel>
+                        </div>
+                    </Dialog>
                 </>
             )}
         </div>

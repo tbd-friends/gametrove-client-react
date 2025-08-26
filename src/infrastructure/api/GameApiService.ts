@@ -52,7 +52,6 @@ export function createGameApiService(authService: IAuthenticationService): GameA
     ): Promise<T> {
         try {
             const token = await authService.getAccessToken();
-            console.log('🔐 Access token retrieved:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
 
             const headers: Record<string, string> = {
                 'Authorization': `Bearer ${token}`,
@@ -64,9 +63,6 @@ export function createGameApiService(authService: IAuthenticationService): GameA
             if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) && options.body) {
                 headers['Content-Type'] = 'application/json';
             }
-
-            console.log('📡 Making API request to:', `${baseUrl}${url}`);
-            console.log('📋 Request headers:', headers);
 
             const response = await fetch(`${baseUrl}${url}`, {
                 ...options,
@@ -80,11 +76,11 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 if (response.status === 403) {
                     throw new Error('Access forbidden. You do not have permission to access this resource.');
                 }
+
                 throw new Error(`API request failed: ${response.status} ${response.statusText}`);
             }
 
-            const data = await response.json();
-            return data;
+            return await response.json();
         } catch (error) {
             if (error instanceof Error) {
                 throw error;
@@ -104,15 +100,11 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                         limit: pagination.limit.toString()
                     });
 
-                    if (pagination.search && pagination.search.trim()) {
+                    if (pagination.search?.trim()) {
                         searchParams.set('search', pagination.search);
                     }
 
                     url = `${gamesEndpoint}?${searchParams}`;
-                    console.log('🔍 Making paginated request to:', url);
-                    console.log('📊 Pagination params:', pagination);
-                } else {
-                    console.log('🔍 Making non-paginated request to:', url);
                 }
 
                 const response = await makeAuthenticatedRequest<PaginatedResponse<Game>>(url);
@@ -194,7 +186,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
             try {
                 const encodedTitle = encodeURIComponent(title);
                 const url = `${gamesEndpoint}/${platformId}/${encodedTitle}`;
-                
+
                 const response = await fetch(`${baseUrl}${url}`, {
                     method: 'HEAD',
                     headers: {
@@ -214,7 +206,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
         async saveGame(request: SaveGameRequest): Promise<string> {
             try {
                 console.log('💾 Saving game to collection:', request);
-                
+
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}`, {
                     method: 'POST',
@@ -241,7 +233,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 if (response.status === 409) {
                     throw new Error('Game already exists in your collection.');
                 }
-                
+
                 throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
@@ -252,7 +244,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
         async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void> {
             try {
                 console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
-                
+
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/link`, {
                     method: 'POST',
@@ -279,7 +271,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 if (response.status === 404) {
                     throw new Error('Game not found or IGDB game not found.');
                 }
-                
+
                 throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to link game to IGDB:', error);
@@ -463,7 +455,7 @@ export function createGameApiServiceWithConfig(
             try {
                 const encodedTitle = encodeURIComponent(title);
                 const url = `${gamesEndpoint}/${platformId}/${encodedTitle}`;
-                
+
                 const response = await fetch(`${baseUrl}${url}`, {
                     method: 'HEAD',
                     headers: {
@@ -483,7 +475,7 @@ export function createGameApiServiceWithConfig(
         async saveGame(request: SaveGameRequest): Promise<string> {
             try {
                 console.log('💾 Saving game to collection:', request);
-                
+
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}`, {
                     method: 'POST',
@@ -510,7 +502,7 @@ export function createGameApiServiceWithConfig(
                 if (response.status === 409) {
                     throw new Error('Game already exists in your collection.');
                 }
-                
+
                 throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to save game:', error);
@@ -521,7 +513,7 @@ export function createGameApiServiceWithConfig(
         async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void> {
             try {
                 console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
-                
+
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/link`, {
                     method: 'POST',
@@ -548,7 +540,7 @@ export function createGameApiServiceWithConfig(
                 if (response.status === 404) {
                     throw new Error('Game not found or IGDB game not found.');
                 }
-                
+
                 throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to link game to IGDB:', error);

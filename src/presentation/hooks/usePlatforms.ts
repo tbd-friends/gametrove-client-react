@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPlatformApiService } from '../../infrastructure/api';
 import { useAuthService } from './useAuthService';
 import type { Platform } from '../../domain/models';
@@ -18,17 +18,20 @@ export function usePlatforms(): UsePlatformsReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const authService = useAuthService();
+  const hasFetched = useRef(false);
 
   // Load platforms from API
   useEffect(() => {
     async function loadPlatforms() {
-      if (!authService.isAuthenticated || authService.isLoading) {
+      // Only load if authenticated and haven't already fetched
+      if (!authService.isAuthenticated || authService.isLoading || hasFetched.current) {
         return;
       }
 
       try {
         setLoading(true);
         setError(null);
+        hasFetched.current = true;
         const platformApiService = createPlatformApiService(authService);
         
         const platformsData = await platformApiService.getAllPlatforms();
@@ -37,13 +40,15 @@ export function usePlatforms(): UsePlatformsReturn {
       } catch (err) {
         console.error('❌ Failed to load platforms:', err);
         setError(err instanceof Error ? err.message : 'Failed to load platforms');
+        // Reset flag on error so we can retry
+        hasFetched.current = false;
       } finally {
         setLoading(false);
       }
     }
 
     loadPlatforms();
-  }, [authService.isAuthenticated, authService.isLoading]);
+  }, [authService.isAuthenticated]);
 
   // Memoized search function for filtering platforms
   const searchPlatforms = useMemo(() => {

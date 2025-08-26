@@ -36,7 +36,18 @@ export const PlatformCombobox: React.FC<PlatformComboboxProps> = ({
   }, [platforms, query]);
 
   const displayValue = (platform: Platform | null) => {
-    return platform ? `${platform.description} (${platform.manufacturer})` : '';
+    if (!platform) {
+      return '';
+    }
+    
+    // If manufacturer is missing, try to find it in the platforms list
+    let manufacturer = platform.manufacturer;
+    if (!manufacturer && platforms.length > 0) {
+      const fullPlatform = platforms.find(p => p.id === platform.id);
+      manufacturer = fullPlatform?.manufacturer || 'Unknown';
+    }
+    
+    return `${platform.description}${manufacturer ? ` (${manufacturer})` : ''}`;
   };
 
   if (loading) {
