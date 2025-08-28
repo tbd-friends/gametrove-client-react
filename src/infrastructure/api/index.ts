@@ -3,3 +3,4 @@ export * from './StatsApiService';
 export * from './PlatformApiService';
 export * from './PublisherApiService';
 export * from './IgdbApiService';
+export * from './ConditionApiService';

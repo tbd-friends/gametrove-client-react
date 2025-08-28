@@ -1,15 +1,16 @@
 import React, {useState, useEffect} from "react";
-import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link} from "lucide-react";
+import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link, Plus, ChevronDown, X} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from '@headlessui/react';
 import {Breadcrumb} from "../components/common";
 import {PlatformCombobox} from "../components/forms";
 import {PublisherCombobox} from "../components/forms/PublisherCombobox";
 import {slugToDisplayName} from "../utils/slugUtils";
-import {createGameApiService, createIgdbApiService} from "../../infrastructure/api";
-import type {IgdbGameDetails} from "../../infrastructure/api";
+import {createGameApiService, createIgdbApiService, createConditionApiService} from "../../infrastructure/api";
+import type {IgdbGameDetails, Condition, CreateCopyRequest} from "../../infrastructure/api";
 import {useAuthService} from "../hooks/useAuthService";
-import type {Game, Platform, Publisher, mapApiConditionToGameCondition} from "../../domain/models";
+import type {Game, Platform, Publisher} from "../../domain/models";
+import {mapApiConditionToGameCondition} from "../../domain/models";
 
 export const GameDetail: React.FC = () => {
     const navigate = useNavigate();
@@ -33,6 +34,22 @@ export const GameDetail: React.FC = () => {
     const [selectedPublisher, setSelectedPublisher] = useState<Publisher | null>(null);
     const [editLoading, setEditLoading] = useState(false);
     const [editError, setEditError] = useState<string | null>(null);
+
+    // Add copy dialog state
+    const [isAddCopyDialogOpen, setIsAddCopyDialogOpen] = useState(false);
+    const [addCopyForm, setAddCopyForm] = useState({
+        datePurchased: '',
+        purchaseCost: '',
+        upcBarcode: ''
+    });
+    const [selectedConditions, setSelectedConditions] = useState<Condition[]>([]);
+    const [addCopyLoading, setAddCopyLoading] = useState(false);
+    const [addCopyError, setAddCopyError] = useState<string | null>(null);
+
+    // Conditions data
+    const [conditions, setConditions] = useState<Condition[]>([]);
+    const [conditionsLoading, setConditionsLoading] = useState(false);
+    const [isConditionDropdownOpen, setIsConditionDropdownOpen] = useState(false);
 
     const authService = useAuthService();
 
@@ -100,6 +117,43 @@ export const GameDetail: React.FC = () => {
 
         loadIgdbDetails();
     }, [game?.igdbGameId, authService.isAuthenticated, authService]);
+
+    // Load conditions when authenticated
+    useEffect(() => {
+        async function loadConditions() {
+            if (!authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setConditionsLoading(true);
+                const conditionApiService = createConditionApiService(authService);
+                const conditionsData = await conditionApiService.getAllConditions();
+                setConditions(conditionsData);
+                console.log('✅ Loaded conditions:', conditionsData);
+            } catch (err) {
+                console.error('❌ Failed to load conditions:', err);
+                // Don't show error to user for conditions, just log it
+            } finally {
+                setConditionsLoading(false);
+            }
+        }
+
+        loadConditions();
+    }, [authService.isAuthenticated, authService]);
+
+    // Close condition dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as HTMLElement;
+            if (isConditionDropdownOpen && !target.closest('.condition-dropdown')) {
+                setIsConditionDropdownOpen(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isConditionDropdownOpen]);
 
     // Merge real game data with placeholder data where needed
     const displayData = React.useMemo(() => {
@@ -265,6 +319,84 @@ export const GameDetail: React.FC = () => {
                 }
             });
         }
+    };
+
+    const handleAddCopy = () => {
+        // Reset form and open dialog
+        setAddCopyForm({
+            datePurchased: new Date().toISOString().split('T')[0], // Default to today
+            purchaseCost: '',
+            upcBarcode: ''
+        });
+        setSelectedConditions([]);
+        setIsConditionDropdownOpen(false);
+        setAddCopyError(null);
+        setIsAddCopyDialogOpen(true);
+    };
+
+    const handleAddCopyFormChange = (field: keyof typeof addCopyForm, value: string) => {
+        setAddCopyForm(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleAddCopySubmit = async () => {
+        if (!gameId) {
+            setAddCopyError('Game ID is required');
+            return;
+        }
+
+        try {
+            setAddCopyLoading(true);
+            setAddCopyError(null);
+
+            // Calculate condition flags by summing selected condition values as bitwise flags
+            const conditionFlags = selectedConditions
+                .map(c => parseInt(c.value, 10))
+                .reduce((sum, flag) => sum | flag, 0);
+
+            // Prepare the copy request
+            const copyRequest: CreateCopyRequest = {
+                purchasedDate: addCopyForm.datePurchased,
+                cost: addCopyForm.purchaseCost ? parseFloat(addCopyForm.purchaseCost) : null,
+                upc: addCopyForm.upcBarcode || undefined,
+                condition: conditionFlags,
+                description: '' // Start with empty description
+            };
+
+            console.log('📦 Creating copy with request:', copyRequest);
+
+            // Call the API to create the copy
+            const gameApiService = createGameApiService(authService);
+            await gameApiService.createGameCopy(gameId, copyRequest);
+
+            console.log('✅ Copy created successfully');
+            setIsAddCopyDialogOpen(false);
+            
+            // Reload game data to show the new copy
+            const updatedGame = await gameApiService.getGameById(gameId);
+            if (updatedGame) {
+                setGame(updatedGame);
+            }
+        } catch (error) {
+            console.error('❌ Failed to create copy:', error);
+            setAddCopyError(error instanceof Error ? error.message : 'Failed to create copy');
+        } finally {
+            setAddCopyLoading(false);
+        }
+    };
+
+    const handleAddCopyCancel = () => {
+        setAddCopyForm({
+            datePurchased: '',
+            purchaseCost: '',
+            upcBarcode: ''
+        });
+        setSelectedConditions([]);
+        setIsConditionDropdownOpen(false);
+        setAddCopyError(null);
+        setIsAddCopyDialogOpen(false);
     };
 
     return (
@@ -566,7 +698,16 @@ export const GameDetail: React.FC = () => {
 
                     {activeTab === 'copies' && (
                         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
-                            <h3 className="text-xl font-semibold text-white mb-4">Your Copies</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-semibold text-white">Your Copies</h3>
+                                <button
+                                    onClick={handleAddCopy}
+                                    className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
+                                >
+                                    <Plus size={16}/>
+                                    Add Copy
+                                </button>
+                            </div>
                             <div className="space-y-4">
                                 {displayData.copies.length > 0 ? displayData.copies.map((copy) => (
                                     <div key={copy.id} className="bg-slate-700 rounded-lg p-4">
@@ -736,6 +877,217 @@ export const GameDetail: React.FC = () => {
                                                 className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                                         )}
                                         Save Changes
+                                    </button>
+                                </div>
+                            </DialogPanel>
+                        </div>
+                    </Dialog>
+
+                    {/* Add Copy Dialog */}
+                    <Dialog open={isAddCopyDialogOpen} onClose={handleAddCopyCancel} className="relative z-50">
+                        <DialogBackdrop className="fixed inset-0 bg-black/50"/>
+                        <div className="fixed inset-0 flex items-center justify-center p-4">
+                            <DialogPanel className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-2xl">
+                                <DialogTitle className="text-xl font-bold text-white mb-6">
+                                    Add New Copy
+                                </DialogTitle>
+
+                                {/* Game Info Header */}
+                                <div className="flex items-center gap-4 mb-6 p-4 bg-slate-700 rounded-lg">
+                                    <div className="w-12 h-16 bg-slate-600 border border-slate-500 rounded flex items-center justify-center text-2xl flex-shrink-0">
+                                        🎮
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white font-semibold">{displayData?.title}</h3>
+                                        <p className="text-gray-400 text-sm">
+                                            {displayData?.platform} • {displayData?.publisher} • {displayData?.year}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Copy Information Section */}
+                                <div className="mb-6">
+                                    <h4 className="text-lg font-semibold text-white mb-4">Copy Information</h4>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Date Purchased */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                                Date Purchased
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={addCopyForm.datePurchased}
+                                                onChange={(e) => handleAddCopyFormChange('datePurchased', e.target.value)}
+                                                disabled={addCopyLoading}
+                                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                                            />
+                                        </div>
+
+                                        {/* Purchase Cost */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                                Purchase Cost
+                                            </label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={addCopyForm.purchaseCost}
+                                                    onChange={(e) => handleAddCopyFormChange('purchaseCost', e.target.value)}
+                                                    disabled={addCopyLoading}
+                                                    placeholder="0.00"
+                                                    className="w-full pl-7 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* UPC/Barcode */}
+                                    <div className="mt-4">
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            UPC/Barcode
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={addCopyForm.upcBarcode}
+                                            onChange={(e) => handleAddCopyFormChange('upcBarcode', e.target.value)}
+                                            disabled={addCopyLoading}
+                                            placeholder="Enter UPC code (e.g., 045496590420)"
+                                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                                        />
+                                        <p className="text-gray-400 text-sm mt-1">
+                                            This helps identify the specific version/edition of the game
+                                        </p>
+                                    </div>
+
+                                    {/* Condition Selection */}
+                                    <div className="mt-4 relative condition-dropdown">
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                                            Condition
+                                        </label>
+                                        
+                                        {/* Selected Conditions Display */}
+                                        {selectedConditions.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mb-2">
+                                                {selectedConditions.map((condition) => (
+                                                    <span 
+                                                        key={condition.value}
+                                                        className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-600 text-white text-xs rounded-full"
+                                                    >
+                                                        {condition.label}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedConditions(prev => prev.filter(c => c.value !== condition.value));
+                                                            }}
+                                                            disabled={addCopyLoading}
+                                                            className="ml-1 hover:bg-cyan-700 rounded-full p-0.5 disabled:opacity-50"
+                                                        >
+                                                            <X size={10} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Dropdown Button */}
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsConditionDropdownOpen(!isConditionDropdownOpen)}
+                                                disabled={addCopyLoading || conditionsLoading}
+                                                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+                                            >
+                                                <span className="text-gray-400">
+                                                    {conditionsLoading ? (
+                                                        <span className="flex items-center gap-2">
+                                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-500 border-t-transparent"></div>
+                                                            Loading conditions...
+                                                        </span>
+                                                    ) : selectedConditions.length === 0 ? (
+                                                        'Select conditions...'
+                                                    ) : (
+                                                        `${selectedConditions.length} condition${selectedConditions.length === 1 ? '' : 's'} selected`
+                                                    )}
+                                                </span>
+                                                <ChevronDown 
+                                                    size={16} 
+                                                    className={`text-gray-400 transition-transform ${isConditionDropdownOpen ? 'transform rotate-180' : ''}`} 
+                                                />
+                                            </button>
+
+                                            {/* Dropdown Content */}
+                                            {isConditionDropdownOpen && !conditionsLoading && (
+                                                <div className="absolute z-10 w-full mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                    {conditions.length === 0 ? (
+                                                        <div className="p-3 text-gray-400 text-sm">No conditions available</div>
+                                                    ) : (
+                                                        conditions.map((condition) => {
+                                                            const isSelected = selectedConditions.some(c => c.value === condition.value);
+                                                            return (
+                                                                <label 
+                                                                    key={condition.value} 
+                                                                    className="flex items-center gap-2 p-3 hover:bg-slate-600 cursor-pointer"
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isSelected}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedConditions(prev => [...prev, condition]);
+                                                                            } else {
+                                                                                setSelectedConditions(prev => prev.filter(c => c.value !== condition.value));
+                                                                            }
+                                                                        }}
+                                                                        disabled={addCopyLoading}
+                                                                        className="w-4 h-4 text-cyan-600 bg-slate-600 border-slate-500 rounded focus:ring-cyan-500 focus:ring-2 disabled:opacity-50"
+                                                                    />
+                                                                    <span className="text-gray-300 text-sm">{condition.label}</span>
+                                                                </label>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <p className="text-gray-400 text-sm mt-1">
+                                            Select the condition(s) that apply to this copy
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Error Display */}
+                                {addCopyError && (
+                                    <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle className="text-red-400 flex-shrink-0" size={16}/>
+                                            <p className="text-red-400 text-sm">{addCopyError}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Dialog Actions */}
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700">
+                                    <button
+                                        onClick={handleAddCopyCancel}
+                                        disabled={addCopyLoading}
+                                        className="px-4 py-2 text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleAddCopySubmit}
+                                        disabled={addCopyLoading || !addCopyForm.datePurchased || selectedConditions.length === 0}
+                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cyan-600"
+                                    >
+                                        {addCopyLoading && (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                        )}
+                                        Add Copy
                                     </button>
                                 </div>
                             </DialogPanel>

@@ -32,6 +32,14 @@ export interface UpdateGameRequest {
     publisherId: string;
 }
 
+export interface CreateCopyRequest {
+    purchasedDate: string; // ISO date string
+    cost?: number | null;
+    upc?: string;
+    condition: number; // Bitwise flags sum
+    description?: string;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
@@ -46,6 +54,8 @@ export interface GameApiService {
     updateGame(gameId: string, request: UpdateGameRequest): Promise<void>;
 
     linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void>;
+
+    createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -322,6 +332,45 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
                 console.error('❌ Failed to link game to IGDB:', error);
+                throw error;
+            }
+        },
+
+        async createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void> {
+            try {
+                console.log('📦 Creating copy for game:', gameId, 'with data:', request);
+
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/copies`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (response.ok) {
+                    console.log('✅ Copy created successfully');
+                    return;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to add copies to this game.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Game not found.');
+                }
+                if (response.status === 409) {
+                    throw new Error('A copy with these details already exists.');
+                }
+
+                throw new Error(`Failed to create copy: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                console.error('❌ Failed to create game copy:', error);
                 throw error;
             }
         }
@@ -631,6 +680,60 @@ export function createGameApiServiceWithConfig(
             } catch (error) {
                 console.error('❌ Failed to link game to IGDB:', error);
                 throw error;
+            }
+        },
+
+        async createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void> {
+            try {
+                console.log('📦 Creating copy for game:', gameId, 'with data:', request);
+
+                const token = await authService.getAccessToken();
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/copies`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    console.log('✅ Copy created successfully');
+                    return;
+                }
+
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to add copies to this game.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Game not found.');
+                }
+                if (response.status === 409) {
+                    throw new Error('A copy with these details already exists.');
+                }
+                if (response.status >= 500) {
+                    throw new Error('Server error. Please try again later.');
+                }
+
+                throw new Error(`Failed to create copy: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                if (error instanceof Error) {
+                    if (error.name === 'AbortError') {
+                        throw new Error(`Request timeout after ${timeout}ms`);
+                    }
+                    throw error;
+                }
+                console.error('❌ Failed to create game copy:', error);
+                throw new Error('An unexpected error occurred while creating the copy.');
             }
         }
     };
