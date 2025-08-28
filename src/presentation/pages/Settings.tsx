@@ -3,6 +3,8 @@ import { TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload } from "lucide-react";
 import { usePlatforms, useIgdbPlatforms } from "../hooks";
 import { createPlatformApiService } from "../../infrastructure/api/PlatformApiService";
 import type { PlatformMappingRequest } from "../../infrastructure/api/PlatformApiService";
+import { createProfileApiService } from "../../infrastructure/api/ProfileApiService";
+import type { UserProfile } from "../../infrastructure/api/ProfileApiService";
 import { useAuthService } from "../hooks/useAuthService";
 import { IgdbPlatformCombobox } from "../components/forms";
 import type { IgdbPlatform } from "../../domain/models/IgdbGame";
@@ -12,10 +14,15 @@ type TabType = "profile" | "igdb";
 export const Settings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>("profile");
     const [showApiKey, setShowApiKey] = useState(false);
+    
+    // Profile state management
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileNotFound, setProfileNotFound] = useState(false);
     const [formData, setFormData] = useState({
-        fullName: "Terry Burns-Dyson",
+        fullName: "",
         favoriteGame: "",
-        priceChartingApiKey: "••••••••••••••••"
+        priceChartingApiKey: ""
     });
 
     const { platforms, loading: platformsLoading } = usePlatforms();
@@ -25,6 +32,47 @@ export const Settings: React.FC = () => {
     // Track mappings with IGDB platforms - mapping platformId to IgdbPlatform
     const [platformMappings, setPlatformMappings] = useState<Record<string, IgdbPlatform | null>>({});
     const [publishingMappings, setPublishingMappings] = useState(false);
+
+    // Load user profile when component mounts
+    useEffect(() => {
+        async function loadUserProfile() {
+            if (!authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setProfileLoading(true);
+                setProfileNotFound(false);
+                
+                const profileApiService = createProfileApiService(authService);
+                const userProfile = await profileApiService.getUserProfile();
+                
+                if (userProfile) {
+                    setProfile(userProfile);
+                    setFormData({
+                        fullName: userProfile.fullName,
+                        favoriteGame: userProfile.favoriteGame,
+                        priceChartingApiKey: userProfile.priceChartingApiKey
+                    });
+                } else {
+                    setProfileNotFound(true);
+                    // Set placeholder values when no profile exists
+                    setFormData({
+                        fullName: "",
+                        favoriteGame: "",
+                        priceChartingApiKey: ""
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load user profile:', error);
+                setProfileNotFound(true);
+            } finally {
+                setProfileLoading(false);
+            }
+        }
+
+        loadUserProfile();
+    }, [authService.isAuthenticated, authService]);
 
     // Initialize platform mappings from existing platform data when both datasets are loaded
     useEffect(() => {
@@ -100,87 +148,123 @@ export const Settings: React.FC = () => {
         }
     };
 
-    const renderProfileTab = () => (
-        <div className="space-y-8">
-            {/* Personal Information */}
-            <div>
-                <h3 className="text-xl font-semibold text-white mb-6">Personal Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                            Full Name
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.fullName}
-                            onChange={(e) => handleInputChange("fullName", e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                            Favorite Game Title
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.favoriteGame}
-                            onChange={(e) => handleInputChange("favoriteGame", e.target.value)}
-                            placeholder="Enter your favorite game"
-                            className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        />
-                    </div>
+    const renderProfileTab = () => {
+        if (profileLoading) {
+            return (
+                <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+                    <span className="ml-3 text-gray-400">Loading profile...</span>
                 </div>
-            </div>
+            );
+        }
 
-            {/* 3rd Party Links */}
-            <div>
-                <h3 className="text-xl font-semibold text-white mb-6">3rd Party Links</h3>
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                            <TrendingUp className="w-5 h-5 text-cyan-400" />
-                            <span className="text-white font-medium">PriceCharting</span>
-                        </div>
-                        <span className="px-3 py-1 bg-green-600 text-green-100 text-sm rounded-full">
-                            Connected
-                        </span>
-                    </div>
-                    
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                            API Key
-                        </label>
-                        <div className="relative">
-                            <input
-                                type={showApiKey ? "text" : "password"}
-                                value={formData.priceChartingApiKey}
-                                onChange={(e) => handleInputChange("priceChartingApiKey", e.target.value)}
-                                className="w-full px-4 py-3 pr-20 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                            />
-                            <div className="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowApiKey(!showApiKey)}
-                                    className="text-gray-400 hover:text-white"
-                                >
-                                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="text-gray-400 hover:text-white"
-                                >
-                                    <Copy className="w-4 h-4" />
-                                </button>
+        return (
+            <div className="space-y-8">
+                {/* Profile Status */}
+                {profileNotFound && (
+                    <div className="bg-amber-900/20 border border-amber-500/50 rounded-lg p-4 mb-6">
+                        <div className="flex items-center gap-2">
+                            <span className="text-amber-400">ℹ️</span>
+                            <div>
+                                <p className="text-amber-400 font-medium">No Profile Information</p>
+                                <p className="text-amber-300 text-sm mt-1">
+                                    No profile information has been saved. Fill out the form below to create your profile.
+                                </p>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-400 mt-2">
-                            Your API key is used to fetch current market prices for your games.
-                        </p>
+                    </div>
+                )}
+
+                {/* Personal Information */}
+                <div>
+                    <h3 className="text-xl font-semibold text-white mb-6">Personal Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Full Name
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.fullName}
+                                onChange={(e) => handleInputChange("fullName", e.target.value)}
+                                placeholder="Enter your full name"
+                                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Favorite Game Title
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.favoriteGame}
+                                onChange={(e) => handleInputChange("favoriteGame", e.target.value)}
+                                placeholder="Enter your favorite game"
+                                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3rd Party Links */}
+                <div>
+                    <h3 className="text-xl font-semibold text-white mb-6">3rd Party Links</h3>
+                    <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                                <TrendingUp className="w-5 h-5 text-cyan-400" />
+                                <span className="text-white font-medium">PriceCharting</span>
+                            </div>
+                            <span className={`px-3 py-1 text-sm rounded-full ${
+                                formData.priceChartingApiKey 
+                                    ? "bg-green-600 text-green-100" 
+                                    : "bg-red-600 text-red-100"
+                            }`}>
+                                {formData.priceChartingApiKey ? "Connected" : "Not Set"}
+                            </span>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                API Key
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showApiKey ? "text" : "password"}
+                                    value={formData.priceChartingApiKey}
+                                    onChange={(e) => handleInputChange("priceChartingApiKey", e.target.value)}
+                                    placeholder="Enter your PriceCharting API key"
+                                    className="w-full px-4 py-3 pr-20 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                />
+                                <div className="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowApiKey(!showApiKey)}
+                                        className="text-gray-400 hover:text-white"
+                                    >
+                                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                    {formData.priceChartingApiKey && (
+                                        <button
+                                            type="button"
+                                            onClick={() => navigator.clipboard.writeText(formData.priceChartingApiKey)}
+                                            className="text-gray-400 hover:text-white"
+                                            title="Copy API key"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-400 mt-2">
+                                Your API key is used to fetch current market prices for your games.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderIgdbTab = () => {
         // Sort platforms alphabetically by description
