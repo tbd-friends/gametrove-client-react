@@ -4,9 +4,16 @@ import type { IAuthenticationService } from '../../domain/interfaces/IAuthentica
  * User profile data structure from API
  */
 export interface UserProfile {
-    fullName: string;
+    name: string;
     favoriteGame: string;
-    priceChartingApiKey: string;
+    hasPriceChartingApiKey: boolean;
+}
+
+/**
+ * Request structure for updating PriceCharting API key
+ */
+export interface UpdatePriceChartingApiKeyRequest {
+    priceChartingApiKey: string | null;
 }
 
 /**
@@ -15,6 +22,7 @@ export interface UserProfile {
 export interface ProfileApiService {
     getUserProfile(): Promise<UserProfile | null>;
     updateUserProfile(profile: UserProfile): Promise<void>;
+    updatePriceChartingApiKey(request: UpdatePriceChartingApiKeyRequest): Promise<void>;
 }
 
 export function createProfileApiService(authService: IAuthenticationService): ProfileApiService {
@@ -70,16 +78,57 @@ export function createProfileApiService(authService: IAuthenticationService): Pr
         async updateUserProfile(profile: UserProfile): Promise<void> {
             try {
                 console.log('💾 Updating user profile:', profile);
-                await makeAuthenticatedRequest<void>(profileEndpoint, {
+                
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${profileEndpoint}`, {
                     method: 'PUT',
                     headers: {
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(profile),
                 });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Resource not found');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Don't try to parse JSON from 200 OK response
                 console.log('✅ User profile updated successfully');
             } catch (error) {
                 console.error('❌ Failed to update user profile:', error);
+                throw error;
+            }
+        },
+
+        async updatePriceChartingApiKey(request: UpdatePriceChartingApiKeyRequest): Promise<void> {
+            try {
+                console.log('💾 Updating PriceCharting API key');
+                
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}${profileEndpoint}/pricecharting`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Resource not found');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Don't try to parse JSON from 200 OK response
+                console.log('✅ PriceCharting API key updated successfully');
+            } catch (error) {
+                console.error('❌ Failed to update PriceCharting API key:', error);
                 throw error;
             }
         }

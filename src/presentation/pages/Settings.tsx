@@ -1,34 +1,45 @@
-import React, { useState, useEffect } from "react";
-import { TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload } from "lucide-react";
-import { usePlatforms, useIgdbPlatforms } from "../hooks";
-import { createPlatformApiService } from "../../infrastructure/api/PlatformApiService";
-import type { PlatformMappingRequest } from "../../infrastructure/api/PlatformApiService";
-import { createProfileApiService } from "../../infrastructure/api/ProfileApiService";
-import type { UserProfile } from "../../infrastructure/api/ProfileApiService";
-import { useAuthService } from "../hooks/useAuthService";
-import { IgdbPlatformCombobox } from "../components/forms";
-import type { IgdbPlatform } from "../../domain/models/IgdbGame";
+import React, {useState, useEffect} from "react";
+import {TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload, Trash2} from "lucide-react";
+import {usePlatforms, useIgdbPlatforms} from "../hooks";
+import {createPlatformApiService} from "../../infrastructure/api/PlatformApiService";
+import type {PlatformMappingRequest} from "../../infrastructure/api/PlatformApiService";
+import {createProfileApiService} from "../../infrastructure/api/ProfileApiService";
+import type {UserProfile, UpdatePriceChartingApiKeyRequest} from "../../infrastructure/api/ProfileApiService";
+import {useAuthService} from "../hooks/useAuthService";
+import {IgdbPlatformCombobox} from "../components/forms";
+import type {IgdbPlatform} from "../../domain/models/IgdbGame";
 
-type TabType = "profile" | "igdb";
+type TabType = "profile" | "pricecharting" | "igdb";
 
 export const Settings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>("profile");
     const [showApiKey, setShowApiKey] = useState(false);
-    
+
     // Profile state management
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileNotFound, setProfileNotFound] = useState(false);
     const [formData, setFormData] = useState({
-        fullName: "",
-        favoriteGame: "",
-        priceChartingApiKey: ""
+        name: "",
+        favoriteGame: ""
     });
+    const [originalFormData, setOriginalFormData] = useState({
+        name: "",
+        favoriteGame: ""
+    });
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
-    const { platforms, loading: platformsLoading } = usePlatforms();
-    const { platforms: igdbPlatforms, loading: igdbPlatformsLoading, reloadPlatforms } = useIgdbPlatforms();
+    // PriceCharting API key state
+    const [priceChartingApiKey, setPriceChartingApiKey] = useState("");
+    const [originalPriceChartingApiKey, setOriginalPriceChartingApiKey] = useState("");
+    const [priceChartingSaveLoading, setPriceChartingSaveLoading] = useState(false);
+    const [priceChartingSaveError, setPriceChartingSaveError] = useState<string | null>(null);
+
+    const {platforms, loading: platformsLoading} = usePlatforms();
+    const {platforms: igdbPlatforms, loading: igdbPlatformsLoading, reloadPlatforms} = useIgdbPlatforms();
     const authService = useAuthService();
-    
+
     // Track mappings with IGDB platforms - mapping platformId to IgdbPlatform
     const [platformMappings, setPlatformMappings] = useState<Record<string, IgdbPlatform | null>>({});
     const [publishingMappings, setPublishingMappings] = useState(false);
@@ -43,25 +54,36 @@ export const Settings: React.FC = () => {
             try {
                 setProfileLoading(true);
                 setProfileNotFound(false);
-                
+
                 const profileApiService = createProfileApiService(authService);
                 const userProfile = await profileApiService.getUserProfile();
-                
+
                 if (userProfile) {
                     setProfile(userProfile);
-                    setFormData({
-                        fullName: userProfile.fullName,
-                        favoriteGame: userProfile.favoriteGame,
-                        priceChartingApiKey: userProfile.priceChartingApiKey
-                    });
+                    const profileData = {
+                        name: userProfile.name,
+                        favoriteGame: userProfile.favoriteGame
+                    };
+                    setFormData(profileData);
+                    setOriginalFormData(profileData);
+                    
+                    // Set PriceCharting API key state
+                    const apiKeyValue = userProfile.hasPriceChartingApiKey ? "••••••••••••••••" : "";
+                    setPriceChartingApiKey(apiKeyValue);
+                    setOriginalPriceChartingApiKey(apiKeyValue);
                 } else {
                     setProfileNotFound(true);
                     // Set placeholder values when no profile exists
-                    setFormData({
-                        fullName: "",
-                        favoriteGame: "",
-                        priceChartingApiKey: ""
-                    });
+                    const emptyData = {
+                        name: "",
+                        favoriteGame: ""
+                    };
+                    setFormData(emptyData);
+                    setOriginalFormData(emptyData);
+                    
+                    // Reset PriceCharting state
+                    setPriceChartingApiKey("");
+                    setOriginalPriceChartingApiKey("");
                 }
             } catch (error) {
                 console.error('Failed to load user profile:', error);
@@ -96,7 +118,7 @@ export const Settings: React.FC = () => {
     useEffect(() => {
         if (platforms.length > 0) {
             setPlatformMappings(prev => {
-                const newMappings = { ...prev };
+                const newMappings = {...prev};
                 platforms.forEach(platform => {
                     // Only initialize if we don't already have this platform mapped
                     if (!(platform.id in newMappings)) {
@@ -109,17 +131,146 @@ export const Settings: React.FC = () => {
     }, [platforms]);
 
     const handleInputChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => ({...prev, [field]: value}));
+        // Clear save error when user makes changes
+        if (saveError) {
+            setSaveError(null);
+        }
+    };
+
+    // Check if form data has changed from original
+    const isFormDirty = () => {
+        return JSON.stringify(formData) !== JSON.stringify(originalFormData);
+    };
+
+    // Check if form is valid (name is required)
+    const isFormValid = () => {
+        return formData.name.trim().length > 0;
+    };
+
+    // Check if save button should be enabled
+    const canSave = () => {
+        return isFormValid() && isFormDirty() && !saveLoading;
     };
 
     const handlePlatformChange = (platformId: string, igdbPlatform: IgdbPlatform | null) => {
-        setPlatformMappings(prev => ({ ...prev, [platformId]: igdbPlatform }));
+        setPlatformMappings(prev => ({...prev, [platformId]: igdbPlatform}));
+    };
+
+    const handleSaveProfile = async () => {
+        if (!canSave()) {
+            return;
+        }
+
+        try {
+            setSaveLoading(true);
+            setSaveError(null);
+
+            const profileData: UserProfile = {
+                name: formData.name.trim(),
+                favoriteGame: formData.favoriteGame?.trim(),
+                hasPriceChartingApiKey: profile?.hasPriceChartingApiKey || false
+            };
+
+            const profileApiService = createProfileApiService(authService);
+            await profileApiService.updateUserProfile(profileData);
+
+            // Update the profile state and original form data on success
+            setProfile(profileData);
+            setOriginalFormData({...formData});
+            setProfileNotFound(false);
+
+            console.log('✅ Profile saved successfully');
+        } catch (error) {
+            console.error('❌ Failed to save profile:', error);
+            setSaveError(error instanceof Error ? error.message : 'Failed to save profile');
+        } finally {
+            setSaveLoading(false);
+        }
+    };
+
+    const handleCancelChanges = () => {
+        setFormData({...originalFormData});
+        setSaveError(null);
+    };
+
+    // PriceCharting form helper functions
+    const isPriceChartingFormDirty = () => {
+        return priceChartingApiKey !== originalPriceChartingApiKey;
+    };
+
+    const isPriceChartingFormValid = () => {
+        // Allow saving both valid API keys and clearing (empty values)
+        return true;
+    };
+
+    const canSavePriceCharting = () => {
+        return isPriceChartingFormValid() && isPriceChartingFormDirty() && !priceChartingSaveLoading;
+    };
+
+    const handlePriceChartingApiKeyChange = (value: string) => {
+        setPriceChartingApiKey(value);
+        // Clear save error when user makes changes
+        if (priceChartingSaveError) {
+            setPriceChartingSaveError(null);
+        }
+    };
+
+    const handleClearApiKey = () => {
+        setPriceChartingApiKey("");
+        // Clear save error when user makes changes
+        if (priceChartingSaveError) {
+            setPriceChartingSaveError(null);
+        }
+    };
+
+    const handleSavePriceChartingApiKey = async () => {
+        if (!canSavePriceCharting()) {
+            return;
+        }
+
+        try {
+            setPriceChartingSaveLoading(true);
+            setPriceChartingSaveError(null);
+
+            const trimmedApiKey = priceChartingApiKey.trim();
+            const request: UpdatePriceChartingApiKeyRequest = {
+                priceChartingApiKey: trimmedApiKey.length > 0 ? trimmedApiKey : null
+            };
+
+            const profileApiService = createProfileApiService(authService);
+            await profileApiService.updatePriceChartingApiKey(request);
+
+            // Update state to reflect successful save
+            setOriginalPriceChartingApiKey(priceChartingApiKey);
+            
+            // Update profile to reflect new connection status
+            if (profile) {
+                const hasApiKey = trimmedApiKey.length > 0;
+                setProfile({
+                    ...profile,
+                    hasPriceChartingApiKey: hasApiKey
+                });
+            }
+
+            console.log('✅ PriceCharting API key saved successfully');
+        } catch (error) {
+            console.error('❌ Failed to save PriceCharting API key:', error);
+            setPriceChartingSaveError(error instanceof Error ? error.message : 'Failed to save API key');
+        } finally {
+            setPriceChartingSaveLoading(false);
+        }
+    };
+
+    const handleCancelPriceChartingChanges = () => {
+        setPriceChartingApiKey(originalPriceChartingApiKey);
+        setPriceChartingSaveError(null);
     };
 
     const publishPlatformMappings = async () => {
         try {
             setPublishingMappings(true);
-            
+
             // Convert mappings to the required Mapping object format, filtering out null values
             const mappingsArray = Object.entries(platformMappings)
                 .filter(([, igdbPlatform]) => igdbPlatform !== null)
@@ -139,7 +290,7 @@ export const Settings: React.FC = () => {
 
             const platformApiService = createPlatformApiService(authService);
             await platformApiService.publishPlatformMappings(request);
-            
+
             console.log(`✅ Published ${mappingsArray.length} platform mappings`);
         } catch (error) {
             console.error('Failed to publish platform mappings:', error);
@@ -168,7 +319,8 @@ export const Settings: React.FC = () => {
                             <div>
                                 <p className="text-amber-400 font-medium">No Profile Information</p>
                                 <p className="text-amber-300 text-sm mt-1">
-                                    No profile information has been saved. Fill out the form below to create your profile.
+                                    No profile information has been saved. Fill out the form below to create your
+                                    profile.
                                 </p>
                             </div>
                         </div>
@@ -181,15 +333,22 @@ export const Settings: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Full Name
+                                Name <span className="text-red-400">*</span>
                             </label>
                             <input
                                 type="text"
-                                value={formData.fullName}
-                                onChange={(e) => handleInputChange("fullName", e.target.value)}
-                                placeholder="Enter your full name"
-                                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                value={formData.name}
+                                onChange={(e) => handleInputChange("name", e.target.value)}
+                                placeholder="Enter your name"
+                                className={`w-full px-4 py-3 bg-slate-700 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent ${
+                                    formData.name.trim().length === 0 && isFormDirty()
+                                        ? 'border-red-500 focus:ring-red-500'
+                                        : 'border-slate-600 focus:ring-cyan-500'
+                                }`}
                             />
+                            {formData.name.trim().length === 0 && isFormDirty() && (
+                                <p className="text-red-400 text-sm mt-1">Name is required</p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -206,21 +365,39 @@ export const Settings: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 3rd Party Links */}
+                {/* Save Error Display */}
+                {saveError && (
+                    <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-red-400">❌</span>
+                            <div>
+                                <p className="text-red-400 font-medium">Failed to Save Profile</p>
+                                <p className="text-red-300 text-sm mt-1">{saveError}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderPriceChartingTab = () => {
+        return (
+            <div className="space-y-8">
+                {/* PriceCharting API Key */}
                 <div>
-                    <h3 className="text-xl font-semibold text-white mb-6">3rd Party Links</h3>
                     <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
-                                <TrendingUp className="w-5 h-5 text-cyan-400" />
-                                <span className="text-white font-medium">PriceCharting</span>
+                                <TrendingUp className="w-5 h-5 text-cyan-400"/>
+                                <span className="text-white font-medium">PriceCharting API</span>
                             </div>
                             <span className={`px-3 py-1 text-sm rounded-full ${
-                                formData.priceChartingApiKey 
-                                    ? "bg-green-600 text-green-100" 
+                                profile?.hasPriceChartingApiKey
+                                    ? "bg-green-600 text-green-100"
                                     : "bg-red-600 text-red-100"
                             }`}>
-                                {formData.priceChartingApiKey ? "Connected" : "Not Set"}
+                                {profile?.hasPriceChartingApiKey ? "Connected" : "Not Set"}
                             </span>
                         </div>
                         
@@ -231,36 +408,83 @@ export const Settings: React.FC = () => {
                             <div className="relative">
                                 <input
                                     type={showApiKey ? "text" : "password"}
-                                    value={formData.priceChartingApiKey}
-                                    onChange={(e) => handleInputChange("priceChartingApiKey", e.target.value)}
+                                    value={priceChartingApiKey}
+                                    onChange={(e) => handlePriceChartingApiKeyChange(e.target.value)}
                                     placeholder="Enter your PriceCharting API key"
-                                    className="w-full px-4 py-3 pr-20 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    disabled={priceChartingSaveLoading}
+                                    className="w-full px-4 py-3 pr-20 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                                 <div className="absolute inset-y-0 right-0 flex items-center space-x-2 pr-3">
                                     <button
                                         type="button"
                                         onClick={() => setShowApiKey(!showApiKey)}
-                                        className="text-gray-400 hover:text-white"
+                                        disabled={priceChartingSaveLoading}
+                                        className="text-gray-400 hover:text-white disabled:opacity-50"
                                     >
-                                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        {showApiKey ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                                     </button>
-                                    {formData.priceChartingApiKey && (
+                                    {priceChartingApiKey && priceChartingApiKey !== "••••••••••••••••" && (
                                         <button
                                             type="button"
-                                            onClick={() => navigator.clipboard.writeText(formData.priceChartingApiKey)}
-                                            className="text-gray-400 hover:text-white"
+                                            onClick={() => navigator.clipboard.writeText(priceChartingApiKey)}
+                                            disabled={priceChartingSaveLoading}
+                                            className="text-gray-400 hover:text-white disabled:opacity-50"
                                             title="Copy API key"
                                         >
-                                            <Copy className="w-4 h-4" />
+                                            <Copy className="w-4 h-4"/>
                                         </button>
                                     )}
                                 </div>
                             </div>
+                            {priceChartingApiKey && (
+                                <button
+                                    type="button"
+                                    onClick={handleClearApiKey}
+                                    disabled={priceChartingSaveLoading}
+                                    className="text-sm text-red-400 hover:text-red-300 mt-2 disabled:opacity-50"
+                                >
+                                    Clear API key
+                                </button>
+                            )}
                             <p className="text-sm text-gray-400 mt-2">
                                 Your API key is used to fetch current market prices for your games.
                             </p>
                         </div>
                     </div>
+                </div>
+
+                {/* Save Error Display */}
+                {priceChartingSaveError && (
+                    <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-red-400">❌</span>
+                            <div>
+                                <p className="text-red-400 font-medium">Failed to Save API Key</p>
+                                <p className="text-red-300 text-sm mt-1">{priceChartingSaveError}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-6 border-t border-slate-700">
+                    <button 
+                        onClick={handleCancelPriceChartingChanges}
+                        disabled={!isPriceChartingFormDirty() || priceChartingSaveLoading}
+                        className="px-6 py-2 text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleSavePriceChartingApiKey}
+                        disabled={!canSavePriceCharting()}
+                        className="flex items-center gap-2 px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {priceChartingSaveLoading && (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        )}
+                        Save Changes
+                    </button>
                 </div>
             </div>
         );
@@ -268,7 +492,7 @@ export const Settings: React.FC = () => {
 
     const renderIgdbTab = () => {
         // Sort platforms alphabetically by description
-        const sortedPlatforms = [...platforms].sort((a, b) => 
+        const sortedPlatforms = [...platforms].sort((a, b) =>
             a.description.localeCompare(b.description)
         );
 
@@ -276,24 +500,24 @@ export const Settings: React.FC = () => {
         const getPlatformIcon = (platform: Platform) => {
             const name = platform.description.toLowerCase();
             const manufacturer = platform.manufacturer.toLowerCase();
-            
+
             if (manufacturer.includes('sony') || name.includes('playstation')) {
-                return { icon: '🎮', color: 'text-blue-400' };
+                return {icon: '🎮', color: 'text-blue-400'};
             }
             if (manufacturer.includes('microsoft') || name.includes('xbox')) {
-                return { icon: '🎮', color: 'text-green-400' };
+                return {icon: '🎮', color: 'text-green-400'};
             }
             if (manufacturer.includes('nintendo')) {
-                return { icon: '🎮', color: 'text-red-400' };
+                return {icon: '🎮', color: 'text-red-400'};
             }
             if (name.includes('pc') || name.includes('steam') || name.includes('windows')) {
-                return { icon: '💻', color: 'text-gray-400' };
+                return {icon: '💻', color: 'text-gray-400'};
             }
-            return { icon: '🎮', color: 'text-gray-300' };
+            return {icon: '🎮', color: 'text-gray-300'};
         };
 
         // Sort IGDB platforms alphabetically by name
-        const sortedIgdbPlatforms = [...igdbPlatforms].sort((a, b) => 
+        const sortedIgdbPlatforms = [...igdbPlatforms].sort((a, b) =>
             a.name.localeCompare(b.name)
         );
 
@@ -323,7 +547,7 @@ export const Settings: React.FC = () => {
                             className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-800 disabled:opacity-50 text-white rounded-lg transition-colors"
                             title="Publish platform mappings to server"
                         >
-                            <Upload className={`w-4 h-4 ${publishingMappings ? 'animate-pulse' : ''}`} />
+                            <Upload className={`w-4 h-4 ${publishingMappings ? 'animate-pulse' : ''}`}/>
                             <span>{publishingMappings ? 'Publishing...' : 'Publish Mappings'}</span>
                         </button>
                         <button
@@ -332,14 +556,14 @@ export const Settings: React.FC = () => {
                             className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 text-white rounded-lg transition-colors border border-slate-600"
                             title="Reload IGDB platforms (clears cache)"
                         >
-                            <RotateCcw className={`w-4 h-4 ${igdbPlatformsLoading ? 'animate-spin' : ''}`} />
+                            <RotateCcw className={`w-4 h-4 ${igdbPlatformsLoading ? 'animate-spin' : ''}`}/>
                             <span>Reload Cache</span>
                         </button>
                     </div>
                 </div>
                 <div className="space-y-4">
                     {sortedPlatforms.map((platform) => {
-                        const { icon, color } = getPlatformIcon(platform);
+                        const {icon, color} = getPlatformIcon(platform);
                         return (
                             <div key={platform.id} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
                                 <div className="flex items-center justify-between">
@@ -372,7 +596,7 @@ export const Settings: React.FC = () => {
     return (
         <div className="max-w-6xl">
             <h1 className="text-3xl font-bold text-white mb-8">Settings</h1>
-            
+
             {/* Tab Navigation */}
             <div className="border-b border-slate-700 mb-8">
                 <nav className="flex space-x-8">
@@ -385,6 +609,19 @@ export const Settings: React.FC = () => {
                         }`}
                     >
                         Profile
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("pricecharting")}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                            activeTab === "pricecharting"
+                                ? "border-cyan-400 text-cyan-400"
+                                : "border-transparent text-gray-400 hover:text-gray-300"
+                        }`}
+                    >
+                        PriceCharting
+                        <div className={`w-2 h-2 rounded-full ${
+                            profile?.hasPriceChartingApiKey ? "bg-green-400" : "bg-red-400"
+                        }`}></div>
                     </button>
                     <button
                         onClick={() => setActiveTab("igdb")}
@@ -401,19 +638,29 @@ export const Settings: React.FC = () => {
 
             {/* Tab Content */}
             <div className="bg-slate-900 rounded-lg p-8">
-                {activeTab === "profile" ? renderProfileTab() : (
-                    <div>
-                        {renderIgdbTab()}
-                    </div>
-                )}
+                {activeTab === "profile" && renderProfileTab()}
+                {activeTab === "pricecharting" && renderPriceChartingTab()}
+                {activeTab === "igdb" && renderIgdbTab()}
 
                 {/* Action Buttons - Only show for Profile tab */}
                 {activeTab === "profile" && (
                     <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-slate-700">
-                        <button className="px-6 py-2 text-gray-300 hover:text-white transition-colors">
+                        <button
+                            onClick={handleCancelChanges}
+                            disabled={!isFormDirty() || saveLoading}
+                            className="px-6 py-2 text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             Cancel
                         </button>
-                        <button className="px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors">
+                        <button
+                            onClick={handleSaveProfile}
+                            disabled={!canSave()}
+                            className="flex items-center gap-2 px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {saveLoading && (
+                                <div
+                                    className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            )}
                             Save Changes
                         </button>
                     </div>
