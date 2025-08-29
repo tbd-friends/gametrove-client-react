@@ -40,6 +40,10 @@ export interface CreateCopyRequest {
     description?: string;
 }
 
+export interface AssociatePricingRequest {
+    priceChartingId: string;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
@@ -56,6 +60,8 @@ export interface GameApiService {
     linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void>;
 
     createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void>;
+
+    associateCopyPricing(copyId: string, request: AssociatePricingRequest): Promise<void>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -372,6 +378,52 @@ export function createGameApiService(authService: IAuthenticationService): GameA
             } catch (error) {
                 console.error('❌ Failed to create game copy:', error);
                 throw error;
+            }
+        },
+
+        async associateCopyPricing(copyId: string, request: AssociatePricingRequest): Promise<void> {
+            try {
+                console.log(`🔗 Associating pricing for copy ${copyId} with PriceCharting ID:`, request.priceChartingId);
+
+                const token = await authService.getAccessToken();
+                const response = await fetch(`${baseUrl}/api/copies/${copyId}/associate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                if (response.ok) {
+                    console.log('✅ Copy pricing associated successfully');
+                    return;
+                }
+
+                // Handle specific error cases
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to associate pricing for this copy.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Copy or pricing data not found.');
+                }
+                if (response.status === 409) {
+                    throw new Error('This copy is already associated with pricing data.');
+                }
+                if (response.status >= 500) {
+                    throw new Error('Server error. Please try again later.');
+                }
+
+                throw new Error(`Failed to associate pricing: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                console.error('❌ Failed to associate copy pricing:', error);
+                if (error instanceof Error) {
+                    throw error;
+                }
+                throw new Error('An unexpected error occurred while associating pricing.');
             }
         }
     };
@@ -734,6 +786,62 @@ export function createGameApiServiceWithConfig(
                 }
                 console.error('❌ Failed to create game copy:', error);
                 throw new Error('An unexpected error occurred while creating the copy.');
+            }
+        },
+
+        async associateCopyPricing(copyId: string, request: AssociatePricingRequest): Promise<void> {
+            try {
+                console.log(`🔗 Associating pricing for copy ${copyId} with PriceCharting ID:`, request.priceChartingId);
+
+                const token = await authService.getAccessToken();
+                const timeout = 30000;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                const response = await fetch(`${baseUrl}/api/copies/${copyId}/associate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(request),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    console.log('✅ Copy pricing associated successfully');
+                    return;
+                }
+
+                // Handle specific error cases
+                if (response.status === 401) {
+                    throw new Error('Authentication failed. Please log in again.');
+                }
+                if (response.status === 403) {
+                    throw new Error('Access forbidden. You do not have permission to associate pricing for this copy.');
+                }
+                if (response.status === 404) {
+                    throw new Error('Copy or pricing data not found.');
+                }
+                if (response.status === 409) {
+                    throw new Error('This copy is already associated with pricing data.');
+                }
+                if (response.status >= 500) {
+                    throw new Error('Server error. Please try again later.');
+                }
+
+                throw new Error(`Failed to associate pricing: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                if (error instanceof Error) {
+                    if (error.name === 'AbortError') {
+                        throw new Error('Request timeout. Please try again.');
+                    }
+                    throw error;
+                }
+                console.error('❌ Failed to associate copy pricing:', error);
+                throw new Error('An unexpected error occurred while associating pricing.');
             }
         }
     };

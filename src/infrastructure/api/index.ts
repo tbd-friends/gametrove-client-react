@@ -5,3 +5,4 @@ export * from './PublisherApiService';
 export * from './IgdbApiService';
 export * from './ConditionApiService';
 export * from './ProfileApiService';
+export * from './PriceChartingApiService';

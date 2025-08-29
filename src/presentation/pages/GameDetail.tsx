@@ -1,14 +1,16 @@
 import React, {useState, useEffect} from "react";
-import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link, Plus, ChevronDown, X} from "lucide-react";
+import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link, Plus, ChevronDown, X, Search} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from '@headlessui/react';
 import {Breadcrumb} from "../components/common";
 import {PlatformCombobox} from "../components/forms";
 import {PublisherCombobox} from "../components/forms/PublisherCombobox";
+import {PriceChartingSearchDialog} from "../components/dialogs/PriceChartingSearchDialog";
 import {slugToDisplayName} from "../utils/slugUtils";
 import {createGameApiService, createIgdbApiService, createConditionApiService} from "../../infrastructure/api";
 import type {IgdbGameDetails, Condition, CreateCopyRequest} from "../../infrastructure/api";
 import {useAuthService} from "../hooks/useAuthService";
+import {usePriceCharting} from "../hooks";
 import type {Game, Platform, Publisher} from "../../domain/models";
 import {mapApiConditionToGameCondition} from "../../domain/models";
 
@@ -51,43 +53,49 @@ export const GameDetail: React.FC = () => {
     const [conditionsLoading, setConditionsLoading] = useState(false);
     const [isConditionDropdownOpen, setIsConditionDropdownOpen] = useState(false);
 
+    // PriceCharting search dialog state
+    const [isPriceChartingSearchOpen, setIsPriceChartingSearchOpen] = useState(false);
+    const [selectedCopyForPricing, setSelectedCopyForPricing] = useState<any>(null);
+
     const authService = useAuthService();
+    const { isEnabled: isPriceChartingEnabled } = usePriceCharting();
+
+    // Function to load/refresh game data from API
+    const loadGameData = async () => {
+        if (!gameId || !authService.isAuthenticated || authService.isLoading) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+            const gameApiService = createGameApiService(authService);
+
+            console.log('🎮 Loading game details for ID:', gameId);
+            const gameData = await gameApiService.getGameById(gameId);
+
+            if (gameData) {
+                setGame(gameData);
+                // Initialize edit form with current game data
+                setEditForm({
+                    title: gameData.description
+                });
+                setSelectedPlatform(gameData.platform);
+                setSelectedPublisher(gameData.publisher);
+                console.log('✅ Game data loaded:', gameData);
+            } else {
+                setError('Game not found');
+            }
+        } catch (err) {
+            console.error('❌ Failed to load game:', err);
+            setError(err instanceof Error ? err.message : 'Failed to load game');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Load game data from API
     useEffect(() => {
-        async function loadGameData() {
-            if (!gameId || !authService.isAuthenticated || authService.isLoading) {
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError(null);
-                const gameApiService = createGameApiService(authService);
-
-                console.log('🎮 Loading game details for ID:', gameId);
-                const gameData = await gameApiService.getGameById(gameId);
-
-                if (gameData) {
-                    setGame(gameData);
-                    // Initialize edit form with current game data
-                    setEditForm({
-                        title: gameData.description
-                    });
-                    setSelectedPlatform(gameData.platform);
-                    setSelectedPublisher(gameData.publisher);
-                    console.log('✅ Game data loaded:', gameData);
-                } else {
-                    setError('Game not found');
-                }
-            } catch (err) {
-                console.error('❌ Failed to load game:', err);
-                setError(err instanceof Error ? err.message : 'Failed to load game');
-            } finally {
-                setLoading(false);
-            }
-        }
-
         loadGameData();
     }, [gameId, authService.isAuthenticated, authService]);
 
@@ -295,6 +303,11 @@ export const GameDetail: React.FC = () => {
         }
         setEditError(null);
         setIsEditDialogOpen(false);
+    };
+
+    const handleSearchPricing = (copy: any) => {
+        setSelectedCopyForPricing(copy);
+        setIsPriceChartingSearchOpen(true);
     };
 
     const handleRemoveFromCollection = () => {
@@ -747,12 +760,23 @@ export const GameDetail: React.FC = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            {copy.isPricingLinked && (
+                                            {copy.isPricingLinked ? (
                                                 <div className="text-right">
                                                     <p className="text-green-400 font-semibold text-lg">${copy.estimatedValue?.toFixed(2) || '0.00'}</p>
                                                     <p className="text-gray-400 text-sm">Current Value</p>
                                                 </div>
-                                            )}
+                                            ) : isPriceChartingEnabled ? (
+                                                <div className="text-right">
+                                                    <button
+                                                        onClick={() => handleSearchPricing(copy)}
+                                                        className="flex items-center gap-2 px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
+                                                        title="Search for pricing data"
+                                                    >
+                                                        <Search className="w-4 h-4" />
+                                                        Search Pricing
+                                                    </button>
+                                                </div>
+                                            ) : null}
                                         </div>
                                     </div>
                                 )) : (
@@ -1097,6 +1121,15 @@ export const GameDetail: React.FC = () => {
                             </DialogPanel>
                         </div>
                     </Dialog>
+
+                    {/* PriceCharting Search Dialog */}
+                    <PriceChartingSearchDialog
+                        isOpen={isPriceChartingSearchOpen}
+                        onClose={() => setIsPriceChartingSearchOpen(false)}
+                        copy={selectedCopyForPricing}
+                        gameName={displayData?.title || game?.description || ''}
+                        onSuccess={loadGameData}
+                    />
                 </>
             )}
         </div>
