@@ -37,7 +37,10 @@ export const MyCollection: React.FC = () => {
     }, []);
 
     // Custom hooks
-    const pagination = usePagination({ initialPageSize: 20 });
+    const pagination = usePagination({ 
+        initialPageSize: 20, 
+        pageKey: consoleName ? `collection-${consoleName}` : 'collection-main' 
+    });
     const { games, loading, paginationLoading, error, paginationEnabled, totalGames, totalPages } = useGamesData({
         viewMode,
         currentPage: pagination.currentPage,

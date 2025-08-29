@@ -90,7 +90,13 @@ export const GamesTable: React.FC<GamesTableProps> = ({
                   </div>
                   <div>
                     <div className="text-white font-medium">{game.description}</div>
-                    <div className="text-gray-400 text-sm">Game</div>
+                    {game.igdbGameId && (
+                      <div className="text-xs mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-600 text-white">
+                          IGDB
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </td>

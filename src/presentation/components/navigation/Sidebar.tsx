@@ -68,6 +68,12 @@ export const Sidebar: React.FC<{
                             <li key={item.path} className="mb-1">
                                 <NavLink
                                     to={item.path}
+                                    onClick={() => {
+                                        // Track navigation source for pagination handling
+                                        if (item.id === 'collection') {
+                                            sessionStorage.setItem('gametrove_navigation_source', 'sidebar');
+                                        }
+                                    }}
                                     className={({isActive}) =>
                                         `flex items-center gap-3 pl-6 pr-4 py-3 transition-colors duration-200 
                                          focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-inset
