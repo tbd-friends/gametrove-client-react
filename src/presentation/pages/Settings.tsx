@@ -6,6 +6,7 @@ import type {PlatformMappingRequest} from "../../infrastructure/api/PlatformApiS
 import {createProfileApiService} from "../../infrastructure/api/ProfileApiService";
 import type {UserProfile, UpdatePriceChartingApiKeyRequest} from "../../infrastructure/api/ProfileApiService";
 import {useAuthService} from "../hooks/useAuthService";
+import {useProfile} from "../../application/context/ProfileContext";
 import {IgdbPlatformCombobox} from "../components/forms";
 import type {IgdbPlatform} from "../../domain/models/IgdbGame";
 
@@ -15,10 +16,9 @@ export const Settings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>("profile");
     const [showApiKey, setShowApiKey] = useState(false);
 
-    // Profile state management
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [profileLoading, setProfileLoading] = useState(false);
-    const [profileNotFound, setProfileNotFound] = useState(false);
+    // Profile state from global context
+    const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
+    const profileNotFound = !profile && !profileLoading;
     const [formData, setFormData] = useState({
         name: "",
         favoriteGame: ""
@@ -44,57 +44,32 @@ export const Settings: React.FC = () => {
     const [platformMappings, setPlatformMappings] = useState<Record<string, IgdbPlatform | null>>({});
     const [publishingMappings, setPublishingMappings] = useState(false);
 
-    // Load user profile when component mounts
+    // Update form data when profile loads from global context
     useEffect(() => {
-        async function loadUserProfile() {
-            if (!authService.isAuthenticated || authService.isLoading) {
-                return;
-            }
-
-            try {
-                setProfileLoading(true);
-                setProfileNotFound(false);
-
-                const profileApiService = createProfileApiService(authService);
-                const userProfile = await profileApiService.getUserProfile();
-
-                if (userProfile) {
-                    setProfile(userProfile);
-                    const profileData = {
-                        name: userProfile.name,
-                        favoriteGame: userProfile.favoriteGame
-                    };
-                    setFormData(profileData);
-                    setOriginalFormData(profileData);
-                    
-                    // Set PriceCharting API key state
-                    const apiKeyValue = userProfile.hasPriceChartingApiKey ? "••••••••••••••••" : "";
-                    setPriceChartingApiKey(apiKeyValue);
-                    setOriginalPriceChartingApiKey(apiKeyValue);
-                } else {
-                    setProfileNotFound(true);
-                    // Set placeholder values when no profile exists
-                    const emptyData = {
-                        name: "",
-                        favoriteGame: ""
-                    };
-                    setFormData(emptyData);
-                    setOriginalFormData(emptyData);
-                    
-                    // Reset PriceCharting state
-                    setPriceChartingApiKey("");
-                    setOriginalPriceChartingApiKey("");
-                }
-            } catch (error) {
-                console.error('Failed to load user profile:', error);
-                setProfileNotFound(true);
-            } finally {
-                setProfileLoading(false);
-            }
+        if (profile) {
+            const profileData = {
+                name: profile.name,
+                favoriteGame: profile.favoriteGame
+            };
+            setFormData(profileData);
+            setOriginalFormData(profileData);
+            
+            // Set PriceCharting API key state
+            const apiKeyValue = profile.hasPriceChartingApiKey ? "••••••••••••••••" : "";
+            setPriceChartingApiKey(apiKeyValue);
+            setOriginalPriceChartingApiKey(apiKeyValue);
+        } else if (!profileLoading) {
+            // Reset form when no profile
+            const emptyData = {
+                name: "",
+                favoriteGame: ""
+            };
+            setFormData(emptyData);
+            setOriginalFormData(emptyData);
+            setPriceChartingApiKey("");
+            setOriginalPriceChartingApiKey("");
         }
-
-        loadUserProfile();
-    }, [authService.isAuthenticated, authService]);
+    }, [profile, profileLoading]);
 
     // Initialize platform mappings from existing platform data when both datasets are loaded
     useEffect(() => {
@@ -175,10 +150,9 @@ export const Settings: React.FC = () => {
             const profileApiService = createProfileApiService(authService);
             await profileApiService.updateUserProfile(profileData);
 
-            // Update the profile state and original form data on success
-            setProfile(profileData);
+            // Update the global profile context and original form data on success
+            await refreshProfile();
             setOriginalFormData({...formData});
-            setProfileNotFound(false);
 
             console.log('✅ Profile saved successfully');
         } catch (error) {
@@ -244,14 +218,8 @@ export const Settings: React.FC = () => {
             // Update state to reflect successful save
             setOriginalPriceChartingApiKey(priceChartingApiKey);
             
-            // Update profile to reflect new connection status
-            if (profile) {
-                const hasApiKey = trimmedApiKey.length > 0;
-                setProfile({
-                    ...profile,
-                    hasPriceChartingApiKey: hasApiKey
-                });
-            }
+            // Refresh global profile to reflect new connection status
+            await refreshProfile();
 
             console.log('✅ PriceCharting API key saved successfully');
         } catch (error) {

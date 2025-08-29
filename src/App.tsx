@@ -3,26 +3,29 @@ import './App.css'
 import DashboardLayout from "./presentation/layouts/DashboardLayout.tsx";
 import {Dashboard, MyCollection, Consoles, AddGame, Settings, GameDetail, LinkGameToIgdb} from "./presentation/pages";
 import { AuthProvider } from './presentation/contexts/AuthContext.tsx';
+import { ProfileProvider } from './application/context/ProfileContext.tsx';
 import { ProtectedRoute } from './presentation/components/auth/ProtectedRoute';
 
 function App() {
     return (
         <AuthProvider>
-            <Router>
-                <Routes>
-                    <Route path="/" element={<DashboardLayout/>}>
-                        <Route index element={<Dashboard/>}/>
-                        <Route path="collection" element={<ProtectedRoute><MyCollection/></ProtectedRoute>}/>
-                        <Route path="collection/console/:consoleName" element={<ProtectedRoute><MyCollection/></ProtectedRoute>}/>
-                        <Route path="collection/game/:gameId" element={<ProtectedRoute><GameDetail/></ProtectedRoute>}/>
-                        <Route path="collection/console/:consoleName/game/:gameId" element={<ProtectedRoute><GameDetail/></ProtectedRoute>}/>
-                        <Route path="collection/game/:gameId/link-igdb" element={<ProtectedRoute><LinkGameToIgdb/></ProtectedRoute>}/>
-                        <Route path="consoles" element={<ProtectedRoute><Consoles/></ProtectedRoute>}/>
-                        <Route path="add-game" element={<ProtectedRoute><AddGame/></ProtectedRoute>}/>
-                        <Route path="settings" element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
-                    </Route>
-                </Routes>
-            </Router>
+            <ProfileProvider>
+                <Router>
+                    <Routes>
+                        <Route path="/" element={<DashboardLayout/>}>
+                            <Route index element={<Dashboard/>}/>
+                            <Route path="collection" element={<ProtectedRoute><MyCollection/></ProtectedRoute>}/>
+                            <Route path="collection/console/:consoleName" element={<ProtectedRoute><MyCollection/></ProtectedRoute>}/>
+                            <Route path="collection/game/:gameId" element={<ProtectedRoute><GameDetail/></ProtectedRoute>}/>
+                            <Route path="collection/console/:consoleName/game/:gameId" element={<ProtectedRoute><GameDetail/></ProtectedRoute>}/>
+                            <Route path="collection/game/:gameId/link-igdb" element={<ProtectedRoute><LinkGameToIgdb/></ProtectedRoute>}/>
+                            <Route path="consoles" element={<ProtectedRoute><Consoles/></ProtectedRoute>}/>
+                            <Route path="add-game" element={<ProtectedRoute><AddGame/></ProtectedRoute>}/>
+                            <Route path="settings" element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
+                        </Route>
+                    </Routes>
+                </Router>
+            </ProfileProvider>
         </AuthProvider>
     )
 }

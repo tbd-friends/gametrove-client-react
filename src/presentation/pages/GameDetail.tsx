@@ -159,9 +159,9 @@ export const GameDetail: React.FC = () => {
     const displayData = React.useMemo(() => {
         if (!game) return null;
 
-        // Calculate total estimated value from copies
+        // Calculate total estimated value from copies with pricing
         const totalEstimatedValue = game.copies
-            ? game.copies.reduce((sum, copy) => sum + (copy.estimatedValue || 0), 0)
+            ? game.copies.reduce((sum, copy) => sum + (copy.isPricingLinked ? (copy.estimatedValue || 0) : 0), 0)
             : 0;
 
         return {
@@ -619,11 +619,13 @@ export const GameDetail: React.FC = () => {
                                             <span
                                                 className="text-green-400 font-semibold">{displayData.totalCopies}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-400">Estimated Value:</span>
-                                            <span
-                                                className="text-green-400 font-semibold">${displayData.estimatedValue.toFixed(2)}</span>
-                                        </div>
+                                        {displayData.estimatedValue > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Estimated Value:</span>
+                                                <span
+                                                    className="text-green-400 font-semibold">${displayData.estimatedValue.toFixed(2)}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Date Added:</span>
                                             <span className="text-white">{displayData.dateAdded}</span>
@@ -745,10 +747,12 @@ export const GameDetail: React.FC = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-green-400 font-semibold text-lg">${copy.estimatedValue?.toFixed(2) || '0.00'}</p>
-                                                <p className="text-gray-400 text-sm">Current Value</p>
-                                            </div>
+                                            {copy.isPricingLinked && (
+                                                <div className="text-right">
+                                                    <p className="text-green-400 font-semibold text-lg">${copy.estimatedValue?.toFixed(2) || '0.00'}</p>
+                                                    <p className="text-gray-400 text-sm">Current Value</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )) : (

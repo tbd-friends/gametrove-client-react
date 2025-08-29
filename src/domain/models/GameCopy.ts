@@ -37,6 +37,9 @@ export interface GameCopy {
   
   /** UPC barcode of this copy */
   upc: string;
+  
+  /** Whether this copy has associated pricing data */
+  isPricingLinked: boolean;
 }
 
 /**
