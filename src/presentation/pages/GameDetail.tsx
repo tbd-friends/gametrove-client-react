@@ -193,7 +193,7 @@ export const GameDetail: React.FC = () => {
                 ...(igdbDetails?.themes?.map(t => t.name) || [])
             ].filter(Boolean).slice(0, 6),
             synopsis: igdbDetails?.summary || "Game details coming soon. This information will be available once we integrate with external game databases.",
-            coverImage: "🎮",
+            coverImage: igdbDetails?.cover ? `https:${igdbDetails.cover.medium}` : "🎮",
             screenshots: igdbDetails?.screenshots?.map((screenshot, index) => ({
                 id: index + 1,
                 thumbnail: `https:${screenshot.thumbnail}`,
@@ -449,8 +449,16 @@ export const GameDetail: React.FC = () => {
                     <div className="flex items-start gap-6 mb-8">
                         {/* Game Cover */}
                         <div
-                            className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-6xl flex-shrink-0 relative">
-                            {displayData.coverImage}
+                            className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                            {igdbDetails?.cover ? (
+                                <img 
+                                    src={displayData.coverImage} 
+                                    alt={`${displayData.title} cover`}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-6xl">{displayData.coverImage}</span>
+                            )}
                             {/* ESRB Rating Badge */}
                             <div
                                 className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">

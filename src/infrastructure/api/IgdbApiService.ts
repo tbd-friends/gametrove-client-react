@@ -26,6 +26,13 @@ export interface IgdbGameDetails {
     id: number;
     name: string;
     summary?: string;
+    cover?: {
+        imageId: string;
+        thumbnail: string;
+        medium: string;
+        height: number;
+        width: number;
+    };
     platforms?: Array<{
         name: string;
     }>;
