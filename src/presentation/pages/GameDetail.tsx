@@ -6,9 +6,10 @@ import {Breadcrumb} from "../components/common";
 import {PlatformCombobox} from "../components/forms";
 import {PublisherCombobox} from "../components/forms/PublisherCombobox";
 import {PriceChartingSearchDialog} from "../components/dialogs/PriceChartingSearchDialog";
+import {PriceHistoryChart} from "../components/charts/PriceHistoryChart";
 import {slugToDisplayName} from "../utils/slugUtils";
-import {createGameApiService, createIgdbApiService, createConditionApiService} from "../../infrastructure/api";
-import type {IgdbGameDetails, Condition, CreateCopyRequest} from "../../infrastructure/api";
+import {createGameApiService, createIgdbApiService, createConditionApiService, createPriceChartingApiService} from "../../infrastructure/api";
+import type {IgdbGameDetails, Condition, CreateCopyRequest, PriceChartingHistoryData} from "../../infrastructure/api";
 import {useAuthService} from "../hooks/useAuthService";
 import {usePriceCharting} from "../hooks";
 import type {Game, Platform, Publisher} from "../../domain/models";
@@ -56,6 +57,11 @@ export const GameDetail: React.FC = () => {
     // PriceCharting search dialog state
     const [isPriceChartingSearchOpen, setIsPriceChartingSearchOpen] = useState(false);
     const [selectedCopyForPricing, setSelectedCopyForPricing] = useState<any>(null);
+
+    // PriceCharting history state
+    const [pricingHistoryData, setPricingHistoryData] = useState<PriceChartingHistoryData[]>([]);
+    const [pricingHistoryLoading, setPricingHistoryLoading] = useState(false);
+    const [pricingHistoryError, setPricingHistoryError] = useState<string | null>(null);
 
     const authService = useAuthService();
     const { isEnabled: isPriceChartingEnabled } = usePriceCharting();
@@ -149,6 +155,33 @@ export const GameDetail: React.FC = () => {
 
         loadConditions();
     }, [authService.isAuthenticated, authService]);
+
+    // Load pricing history when PriceCharting is enabled and we have a gameId
+    useEffect(() => {
+        async function loadPricingHistory() {
+            if (!gameId || !isPriceChartingEnabled || !authService.isAuthenticated || authService.isLoading || activeTab !== 'pricecharting') {
+                return;
+            }
+
+            try {
+                setPricingHistoryLoading(true);
+                setPricingHistoryError(null);
+
+                const priceChartingApiService = createPriceChartingApiService(authService);
+                const historyData = await priceChartingApiService.getPriceHistory(gameId);
+
+                setPricingHistoryData(historyData);
+                console.log('✅ Loaded pricing history:', historyData);
+            } catch (err) {
+                console.error('❌ Failed to load pricing history:', err);
+                setPricingHistoryError(err instanceof Error ? err.message : 'Failed to load pricing history');
+            } finally {
+                setPricingHistoryLoading(false);
+            }
+        }
+
+        loadPricingHistory();
+    }, [gameId, isPriceChartingEnabled, authService.isAuthenticated, authService, activeTab]);
 
     // Close condition dropdown when clicking outside
     useEffect(() => {
@@ -809,17 +842,119 @@ export const GameDetail: React.FC = () => {
                     )}
 
                     {activeTab === 'pricecharting' && isPriceChartingEnabled && (
-                        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-semibold text-white">PriceCharting Data</h3>
-                            </div>
-                            <div className="text-center text-gray-400 py-12">
-                                <div className="text-6xl mb-4">📊</div>
-                                <p className="text-lg mb-2">Pricing Charts Coming Soon</p>
-                                <p className="text-sm text-gray-500 mb-4">
-                                    This tab will display historical pricing data and trends for your game copies using Recharts.
-                                </p>
-                            </div>
+                        <div className="space-y-6 mb-8">
+                            {/* Loading State */}
+                            {pricingHistoryLoading && (
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+                                        <span className="ml-3 text-gray-400">Loading pricing history...</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Error State */}
+                            {pricingHistoryError && !pricingHistoryLoading && (
+                                <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="text-red-400 flex-shrink-0" size={20}/>
+                                        <div>
+                                            <h3 className="text-red-400 font-medium">Failed to load pricing data</h3>
+                                            <p className="text-gray-300 text-sm mt-1">{pricingHistoryError}</p>
+                                            <button
+                                                onClick={() => {
+                                                    if (gameId && isPriceChartingEnabled && authService.isAuthenticated) {
+                                                        const loadPricingHistory = async () => {
+                                                            try {
+                                                                setPricingHistoryLoading(true);
+                                                                setPricingHistoryError(null);
+                                                                const priceChartingApiService = createPriceChartingApiService(authService);
+                                                                const historyData = await priceChartingApiService.getPriceHistory(gameId);
+                                                                setPricingHistoryData(historyData);
+                                                            } catch (err) {
+                                                                setPricingHistoryError(err instanceof Error ? err.message : 'Failed to load pricing history');
+                                                            } finally {
+                                                                setPricingHistoryLoading(false);
+                                                            }
+                                                        };
+                                                        loadPricingHistory();
+                                                    }
+                                                }}
+                                                className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                                            >
+                                                Retry
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Success State - Chart and Data */}
+                            {!pricingHistoryLoading && !pricingHistoryError && pricingHistoryData.length > 0 && (
+                                <>
+                                    {/* Pricing History Chart */}
+                                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div>
+                                                <h3 className="text-xl font-semibold text-white">Price History</h3>
+                                                <p className="text-gray-400 text-sm mt-1">Historical pricing trends for different conditions</p>
+                                            </div>
+                                            {pricingHistoryData.length > 0 && (
+                                                <div className="text-right">
+                                                    <p className="text-gray-400 text-xs">Last updated</p>
+                                                    <p className="text-gray-300 text-sm">
+                                                        {new Date(pricingHistoryData[0].lastUpdated).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <PriceHistoryChart data={pricingHistoryData} />
+                                    </div>
+
+                                    {/* Price Summary Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {pricingHistoryData.map(edition => {
+                                            const latestPrice = edition.history[edition.history.length - 1];
+                                            return (
+                                                <div key={edition.priceChartingId} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                                                    <h4 className="text-white font-medium mb-3">{edition.name}</h4>
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400 text-sm">Complete:</span>
+                                                            <span className="text-cyan-400 font-medium">${latestPrice.completeInBox.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400 text-sm">Loose:</span>
+                                                            <span className="text-yellow-400 font-medium">${latestPrice.loose.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400 text-sm">New:</span>
+                                                            <span className="text-green-400 font-medium">${latestPrice.new.toFixed(2)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+
+                            {/* No Data State */}
+                            {!pricingHistoryLoading && !pricingHistoryError && pricingHistoryData.length === 0 && (
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                    <div className="text-center text-gray-400 py-12">
+                                        <div className="text-6xl mb-4">📊</div>
+                                        <p className="text-lg mb-2">No Pricing Data Available</p>
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            This game doesn't have any pricing history data available from PriceCharting.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
