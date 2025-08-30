@@ -8,7 +8,12 @@ import {PublisherCombobox} from "../components/forms/PublisherCombobox";
 import {PriceChartingSearchDialog} from "../components/dialogs/PriceChartingSearchDialog";
 import {PriceHistoryChart} from "../components/charts/PriceHistoryChart";
 import {slugToDisplayName} from "../utils/slugUtils";
-import {createGameApiService, createIgdbApiService, createConditionApiService, createPriceChartingApiService} from "../../infrastructure/api";
+import {
+    createGameApiService,
+    createIgdbApiService,
+    createConditionApiService,
+    createPriceChartingApiService
+} from "../../infrastructure/api";
 import type {IgdbGameDetails, Condition, CreateCopyRequest, PriceChartingHistoryData} from "../../infrastructure/api";
 import {useAuthService} from "../hooks/useAuthService";
 import {usePriceCharting} from "../hooks";
@@ -64,7 +69,7 @@ export const GameDetail: React.FC = () => {
     const [pricingHistoryError, setPricingHistoryError] = useState<string | null>(null);
 
     const authService = useAuthService();
-    const { isEnabled: isPriceChartingEnabled } = usePriceCharting();
+    const {isEnabled: isPriceChartingEnabled} = usePriceCharting();
 
     // Function to load/refresh game data from API
     const loadGameData = async () => {
@@ -419,7 +424,7 @@ export const GameDetail: React.FC = () => {
 
             console.log('✅ Copy created successfully');
             setIsAddCopyDialogOpen(false);
-            
+
             // Reload game data to show the new copy
             const updatedGame = await gameApiService.getGameById(gameId);
             if (updatedGame) {
@@ -484,8 +489,8 @@ export const GameDetail: React.FC = () => {
                         <div
                             className="w-48 h-64 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center flex-shrink-0 relative overflow-hidden">
                             {igdbDetails?.cover ? (
-                                <img 
-                                    src={displayData.coverImage} 
+                                <img
+                                    src={displayData.coverImage}
                                     alt={`${displayData.title} cover`}
                                     className="w-full h-full object-cover"
                                 />
@@ -827,7 +832,7 @@ export const GameDetail: React.FC = () => {
                                                         className="flex items-center gap-2 px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
                                                         title="Search for pricing data"
                                                     >
-                                                        <Search className="w-4 h-4" />
+                                                        <Search className="w-4 h-4"/>
                                                         Search Pricing
                                                     </button>
                                                 </div>
@@ -849,7 +854,8 @@ export const GameDetail: React.FC = () => {
                             {pricingHistoryLoading && (
                                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
                                     <div className="flex items-center justify-center py-12">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+                                        <div
+                                            className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
                                         <span className="ml-3 text-gray-400">Loading pricing history...</span>
                                     </div>
                                 </div>
@@ -894,12 +900,13 @@ export const GameDetail: React.FC = () => {
                             {/* Success State - Chart and Data */}
                             {!pricingHistoryLoading && !pricingHistoryError && pricingHistoryData.length > 0 && pricingHistoryData.some(edition => edition.history && edition.history.length > 0) && (
                                 <>
-                                    {/* Pricing History Chart */}
-                                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                    {/* Current Market Price Section */}
+                                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-6">
                                         <div className="flex items-center justify-between mb-6">
-                                            <div>
-                                                <h3 className="text-xl font-semibold text-white">Price History</h3>
-                                                <p className="text-gray-400 text-sm mt-1">Historical pricing trends for different conditions</p>
+                                            <div className="flex items-center gap-3">
+                                                <div>
+                                                    <h3 className="text-xl font-semibold text-white">Latest</h3>
+                                                </div>
                                             </div>
                                             {pricingHistoryData.length > 0 && (
                                                 <div className="text-right">
@@ -914,35 +921,72 @@ export const GameDetail: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        <PriceHistoryChart data={pricingHistoryData} />
-                                    </div>
 
-                                    {/* Price Summary Cards */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {pricingHistoryData
-                                            .filter(edition => edition.history && edition.history.length > 0)
-                                            .map(edition => {
-                                                const latestPrice = edition.history[edition.history.length - 1];
-                                                return (
-                                                    <div key={edition.priceChartingId} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                                                        <h4 className="text-white font-medium mb-3">{edition.name}</h4>
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-400 text-sm">Complete:</span>
-                                                                <span className="text-cyan-400 font-medium">${latestPrice.completeInBox.toFixed(2)}</span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-400 text-sm">Loose:</span>
-                                                                <span className="text-yellow-400 font-medium">${latestPrice.loose.toFixed(2)}</span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-gray-400 text-sm">New:</span>
-                                                                <span className="text-green-400 font-medium">${latestPrice.new.toFixed(2)}</span>
+                                        {/* Current Price Cards */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            {pricingHistoryData
+                                                .map(edition => {
+                                                    return (
+                                                        <div key={edition.priceChartingId}>
+                                                            <h4 className="text-white font-semibold mb-3 text-center">{edition.name}</h4>
+                                                            <div className="space-y-3">
+                                                                {/* New */}
+                                                                <div className="bg-slate-700 rounded-lg p-4">
+                                                                    <div
+                                                                        className="flex items-center justify-between mb-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span
+                                                                                className="w-3 h-3 bg-green-400 rounded-full"></span>
+                                                                            <span
+                                                                                className="text-gray-300 font-medium">New</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div
+                                                                        className="text-2xl font-bold text-green-400">${edition.new.toFixed(2)}</div>
+                                                                </div>
+
+                                                                {/* Complete */}
+                                                                <div className="bg-slate-700 rounded-lg p-4">
+                                                                    <div
+                                                                        className="flex items-center justify-between mb-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span
+                                                                                className="w-3 h-3 bg-cyan-400 rounded-full"></span>
+                                                                            <span
+                                                                                className="text-gray-300 font-medium">Complete</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div
+                                                                        className="text-2xl font-bold text-cyan-400">${edition.completeInBox.toFixed(2)}</div>
+                                                                </div>
+
+                                                                {/* Loose */}
+                                                                <div className="bg-slate-700 rounded-lg p-4">
+                                                                    <div
+                                                                        className="flex items-center justify-between mb-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span
+                                                                                className="w-3 h-3 bg-yellow-400 rounded-full"></span>
+                                                                            <span
+                                                                                className="text-gray-300 font-medium">Loose</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div
+                                                                        className="text-2xl font-bold text-yellow-400">${edition.loose.toFixed(2)}</div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+
+                                    {/* Price History Chart */}
+                                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                                        <div className="mb-6">
+                                            <h3 className="text-xl font-semibold text-white mb-2">Price History</h3>
+                                        </div>
+                                        <PriceHistoryChart data={pricingHistoryData}/>
                                     </div>
                                 </>
                             )}
@@ -954,7 +998,8 @@ export const GameDetail: React.FC = () => {
                                         <div className="text-6xl mb-4">📊</div>
                                         <p className="text-lg mb-2">No Pricing History Available</p>
                                         <p className="text-sm text-gray-500 mb-4">
-                                            This game doesn't have any pricing history data available from PriceCharting.
+                                            This game doesn't have any pricing history data available from
+                                            PriceCharting.
                                         </p>
                                     </div>
                                 </div>
@@ -1089,14 +1134,16 @@ export const GameDetail: React.FC = () => {
                     <Dialog open={isAddCopyDialogOpen} onClose={handleAddCopyCancel} className="relative z-50">
                         <DialogBackdrop className="fixed inset-0 bg-black/50"/>
                         <div className="fixed inset-0 flex items-center justify-center p-4">
-                            <DialogPanel className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-2xl">
+                            <DialogPanel
+                                className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-2xl">
                                 <DialogTitle className="text-xl font-bold text-white mb-6">
                                     Add New Copy
                                 </DialogTitle>
 
                                 {/* Game Info Header */}
                                 <div className="flex items-center gap-4 mb-6 p-4 bg-slate-700 rounded-lg">
-                                    <div className="w-12 h-16 bg-slate-600 border border-slate-500 rounded flex items-center justify-center text-2xl flex-shrink-0">
+                                    <div
+                                        className="w-12 h-16 bg-slate-600 border border-slate-500 rounded flex items-center justify-center text-2xl flex-shrink-0">
                                         🎮
                                     </div>
                                     <div>
@@ -1110,7 +1157,7 @@ export const GameDetail: React.FC = () => {
                                 {/* Copy Information Section */}
                                 <div className="mb-6">
                                     <h4 className="text-lg font-semibold text-white mb-4">Copy Information</h4>
-                                    
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Date Purchased */}
                                         <div>
@@ -1132,7 +1179,8 @@ export const GameDetail: React.FC = () => {
                                                 Purchase Cost
                                             </label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                                                <span
+                                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -1170,12 +1218,12 @@ export const GameDetail: React.FC = () => {
                                         <label className="block text-sm font-medium text-gray-300 mb-2">
                                             Condition
                                         </label>
-                                        
+
                                         {/* Selected Conditions Display */}
                                         {selectedConditions.length > 0 && (
                                             <div className="flex flex-wrap gap-1 mb-2">
                                                 {selectedConditions.map((condition) => (
-                                                    <span 
+                                                    <span
                                                         key={condition.value}
                                                         className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-600 text-white text-xs rounded-full"
                                                     >
@@ -1188,7 +1236,7 @@ export const GameDetail: React.FC = () => {
                                                             disabled={addCopyLoading}
                                                             className="ml-1 hover:bg-cyan-700 rounded-full p-0.5 disabled:opacity-50"
                                                         >
-                                                            <X size={10} />
+                                                            <X size={10}/>
                                                         </button>
                                                     </span>
                                                 ))}
@@ -1206,7 +1254,8 @@ export const GameDetail: React.FC = () => {
                                                 <span className="text-gray-400">
                                                     {conditionsLoading ? (
                                                         <span className="flex items-center gap-2">
-                                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-500 border-t-transparent"></div>
+                                                            <div
+                                                                className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-500 border-t-transparent"></div>
                                                             Loading conditions...
                                                         </span>
                                                     ) : selectedConditions.length === 0 ? (
@@ -1215,23 +1264,25 @@ export const GameDetail: React.FC = () => {
                                                         `${selectedConditions.length} condition${selectedConditions.length === 1 ? '' : 's'} selected`
                                                     )}
                                                 </span>
-                                                <ChevronDown 
-                                                    size={16} 
-                                                    className={`text-gray-400 transition-transform ${isConditionDropdownOpen ? 'transform rotate-180' : ''}`} 
+                                                <ChevronDown
+                                                    size={16}
+                                                    className={`text-gray-400 transition-transform ${isConditionDropdownOpen ? 'transform rotate-180' : ''}`}
                                                 />
                                             </button>
 
                                             {/* Dropdown Content */}
                                             {isConditionDropdownOpen && !conditionsLoading && (
-                                                <div className="absolute z-10 w-full mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                <div
+                                                    className="absolute z-10 w-full mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                                     {conditions.length === 0 ? (
-                                                        <div className="p-3 text-gray-400 text-sm">No conditions available</div>
+                                                        <div className="p-3 text-gray-400 text-sm">No conditions
+                                                            available</div>
                                                     ) : (
                                                         conditions.map((condition) => {
                                                             const isSelected = selectedConditions.some(c => c.value === condition.value);
                                                             return (
-                                                                <label 
-                                                                    key={condition.value} 
+                                                                <label
+                                                                    key={condition.value}
                                                                     className="flex items-center gap-2 p-3 hover:bg-slate-600 cursor-pointer"
                                                                 >
                                                                     <input
@@ -1247,7 +1298,8 @@ export const GameDetail: React.FC = () => {
                                                                         disabled={addCopyLoading}
                                                                         className="w-4 h-4 text-cyan-600 bg-slate-600 border-slate-500 rounded focus:ring-cyan-500 focus:ring-2 disabled:opacity-50"
                                                                     />
-                                                                    <span className="text-gray-300 text-sm">{condition.label}</span>
+                                                                    <span
+                                                                        className="text-gray-300 text-sm">{condition.label}</span>
                                                                 </label>
                                                             );
                                                         })
@@ -1287,7 +1339,8 @@ export const GameDetail: React.FC = () => {
                                         className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cyan-600"
                                     >
                                         {addCopyLoading && (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                            <div
+                                                className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                                         )}
                                         Add Copy
                                     </button>
