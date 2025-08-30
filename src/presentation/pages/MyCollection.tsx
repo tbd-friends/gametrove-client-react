@@ -3,7 +3,7 @@ import { AlertCircle, Search, List, Grid3X3, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { consoleNameToSlug } from "../utils/slugUtils";
-import { usePagination, useGamesData } from "../hooks";
+import { usePagination, useGamesData, useBarcodeScanner } from "../hooks";
 import {
   GamesTable,
   ConsolesGrid,
@@ -22,6 +22,9 @@ const COLLECTION_VIEW_KEY = 'gametrove_collection_view_mode';
 
 export const MyCollection: React.FC = () => {
     const [searchValue, setSearchValue] = useState('');
+    const [isScanning, setIsScanning] = useState(false);
+    const [isProgrammaticUpdate, setIsProgrammaticUpdate] = useState(false);
+    const [isSearchFieldFocused, setIsSearchFieldFocused] = useState(false);
     // Get view mode from localStorage, default to 'list'
     const [viewMode, setViewMode] = useState<'list' | 'console'>(() => {
         const saved = localStorage.getItem(COLLECTION_VIEW_KEY);
@@ -29,6 +32,38 @@ export const MyCollection: React.FC = () => {
     });
     const navigate = useNavigate();
     const { consoleName } = useParams<{ consoleName?: string }>();
+
+    // Barcode scanner integration
+    const handleBarcodeScanned = React.useCallback((barcode: string) => {
+        console.log('🔍 Complete barcode scanned, setting search value:', barcode);
+        setIsProgrammaticUpdate(true);
+        setSearchValue(barcode);
+        // Reset the flag after a brief delay
+        setTimeout(() => setIsProgrammaticUpdate(false), 100);
+        
+        // Optional: Show a brief notification that barcode was detected
+        // You could add a toast notification here if needed
+    }, []);
+
+    const { clearBuffer } = useBarcodeScanner({
+        onBarcodeScanned: handleBarcodeScanned,
+        onScanningStarted: () => {
+            console.log('📱 Barcode scanning started - clearing search field');
+            setIsProgrammaticUpdate(true);
+            setSearchValue(''); // Clear existing search when new scan starts
+            setIsScanning(true);
+            // Reset the flag after a brief delay
+            setTimeout(() => setIsProgrammaticUpdate(false), 100);
+        },
+        onScanningEnded: () => {
+            console.log('📱 Barcode scanning ended');
+            setIsScanning(false);
+        },
+        enabled: !isProgrammaticUpdate && !isSearchFieldFocused, // Disable scanner during programmatic updates or when typing
+        minLength: 8,  // Minimum barcode length
+        maxLength: 30, // Maximum barcode length
+        timeout: 100   // Timeout between keystrokes to detect scanner vs typing
+    });
 
     // Custom view mode setter that saves to localStorage
     const updateViewMode = React.useCallback((mode: 'list' | 'console') => {
@@ -102,25 +137,18 @@ export const MyCollection: React.FC = () => {
         ? consoles.find(c => consoleNameToSlug(c.name) === consoleName.toLowerCase())
         : null;
 
-    // Filter games based on selected console and search
+    // Filter games based on selected console only
+    // Note: Search filtering is handled server-side by the API via searchTerm parameter
     const filteredGames = React.useMemo(() => {
         let filtered = games;
 
-        // Filter by selected console
+        // Only filter by selected console - search is handled by the API
         if (selectedConsole) {
+            console.log('🏮 Filtering by selected console:', selectedConsole.name);
             filtered = filtered.filter(game => game.platform.description === selectedConsole.name);
         }
 
-        // Filter by search term
-        if (searchValue.trim()) {
-            const searchLower = searchValue.toLowerCase();
-            filtered = filtered.filter(game =>
-                game.description.toLowerCase().includes(searchLower) ||
-                game.platform.description.toLowerCase().includes(searchLower) ||
-                game.publisher?.description.toLowerCase().includes(searchLower)
-            );
-        }
-
+        console.log('🔍 Final filtered games:', filtered.length, 'Search handled by API:', !!searchValue);
         return filtered;
     }, [games, selectedConsole, searchValue]);
 
@@ -212,6 +240,14 @@ export const MyCollection: React.FC = () => {
                             placeholder="Search your collection..."
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
+                            onFocus={() => {
+                                console.log('🔍 Search field focused - disabling barcode scanner');
+                                setIsSearchFieldFocused(true);
+                            }}
+                            onBlur={() => {
+                                console.log('🔍 Search field blurred - enabling barcode scanner');
+                                setIsSearchFieldFocused(false);
+                            }}
                             className="w-full sm:w-80 pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg
                                    text-white placeholder-gray-400 focus:outline-none focus:ring-2 
                                    focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200"

@@ -6,6 +6,7 @@ export { usePublishers } from './usePublishers';
 export { useIgdbSearch } from './useIgdbSearch';
 export { useIgdbPlatforms } from './useIgdbPlatforms';
 export { usePriceCharting } from './usePriceCharting';
+export { useBarcodeScanner } from './useBarcodeScanner';
 export type { UsePaginationProps, UsePaginationReturn } from './usePagination';
 export type { UseGamesDataProps, UseGamesDataReturn } from './useGamesData';
 export type { UseStatsReturn } from './useStats';
