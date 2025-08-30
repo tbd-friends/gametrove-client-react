@@ -34,12 +34,18 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data, clas
   const chartData = React.useMemo(() => {
     if (!data || data.length === 0) return [];
 
+    // Check if any edition has history data
+    const hasAnyHistory = data.some(edition => edition.history && edition.history.length > 0);
+    if (!hasAnyHistory) return [];
+
     // Get all unique dates across all editions
     const allDates = new Set<string>();
     data.forEach(edition => {
-      edition.history.forEach(entry => {
-        allDates.add(entry.captured);
-      });
+      if (edition.history && edition.history.length > 0) {
+        edition.history.forEach(entry => {
+          allDates.add(entry.captured);
+        });
+      }
     });
 
     // Convert to sorted array
@@ -58,12 +64,14 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data, clas
 
       // Add data for each edition and condition
       data.forEach(edition => {
-        const entry = edition.history.find(h => h.captured === date);
-        if (entry) {
-          const editionKey = edition.name.replace(/[^a-zA-Z0-9]/g, '_');
-          point[`${editionKey}_completeInBox`] = entry.completeInBox;
-          point[`${editionKey}_loose`] = entry.loose;
-          point[`${editionKey}_new`] = entry.new;
+        if (edition.history && edition.history.length > 0) {
+          const entry = edition.history.find(h => h.captured === date);
+          if (entry) {
+            const editionKey = edition.name.replace(/[^a-zA-Z0-9]/g, '_');
+            point[`${editionKey}_completeInBox`] = entry.completeInBox;
+            point[`${editionKey}_loose`] = entry.loose;
+            point[`${editionKey}_new`] = entry.new;
+          }
         }
       });
 
@@ -75,13 +83,17 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data, clas
   const lineConfigs = React.useMemo(() => {
     if (!data || data.length === 0) return [];
 
+    // Filter out editions with no history data
+    const editionsWithHistory = data.filter(edition => edition.history && edition.history.length > 0);
+    if (editionsWithHistory.length === 0) return [];
+
     const colors = [
       { completeInBox: '#22d3ee', loose: '#facc15', new: '#10b981' }, // cyan, yellow, green
       { completeInBox: '#a855f7', loose: '#f97316', new: '#ef4444' }, // purple, orange, red
       { completeInBox: '#3b82f6', loose: '#8b5cf6', new: '#06b6d4' }, // blue, violet, sky
     ];
 
-    return data.flatMap((edition, editionIndex) => {
+    return editionsWithHistory.flatMap((edition, editionIndex) => {
       const editionKey = edition.name.replace(/[^a-zA-Z0-9]/g, '_');
       const colorSet = colors[editionIndex % colors.length];
       const strokeWidth = editionIndex === 0 ? 2 : 2;
@@ -127,7 +139,7 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({ data, clas
       <div className={`flex items-center justify-center h-64 text-gray-400 ${className}`}>
         <div className="text-center">
           <div className="text-4xl mb-2">📈</div>
-          <p>No pricing data available</p>
+          <p>No pricing history available</p>
         </div>
       </div>
     );

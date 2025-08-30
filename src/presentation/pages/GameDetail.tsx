@@ -816,7 +816,9 @@ export const GameDetail: React.FC = () => {
                                             {copy.isPricingLinked ? (
                                                 <div className="text-right">
                                                     <p className="text-green-400 font-semibold text-lg">${copy.estimatedValue?.toFixed(2) || '0.00'}</p>
-                                                    <p className="text-gray-400 text-sm">Current Value</p>
+                                                    <p className="text-gray-400 text-sm">
+                                                        {isPriceChartingEnabled ? 'Current Value' : 'Last Known Value'}
+                                                    </p>
                                                 </div>
                                             ) : isPriceChartingEnabled ? (
                                                 <div className="text-right">
@@ -890,7 +892,7 @@ export const GameDetail: React.FC = () => {
                             )}
 
                             {/* Success State - Chart and Data */}
-                            {!pricingHistoryLoading && !pricingHistoryError && pricingHistoryData.length > 0 && (
+                            {!pricingHistoryLoading && !pricingHistoryError && pricingHistoryData.length > 0 && pricingHistoryData.some(edition => edition.history && edition.history.length > 0) && (
                                 <>
                                     {/* Pricing History Chart */}
                                     <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
@@ -917,38 +919,40 @@ export const GameDetail: React.FC = () => {
 
                                     {/* Price Summary Cards */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {pricingHistoryData.map(edition => {
-                                            const latestPrice = edition.history[edition.history.length - 1];
-                                            return (
-                                                <div key={edition.priceChartingId} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                                                    <h4 className="text-white font-medium mb-3">{edition.name}</h4>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-400 text-sm">Complete:</span>
-                                                            <span className="text-cyan-400 font-medium">${latestPrice.completeInBox.toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-400 text-sm">Loose:</span>
-                                                            <span className="text-yellow-400 font-medium">${latestPrice.loose.toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-400 text-sm">New:</span>
-                                                            <span className="text-green-400 font-medium">${latestPrice.new.toFixed(2)}</span>
+                                        {pricingHistoryData
+                                            .filter(edition => edition.history && edition.history.length > 0)
+                                            .map(edition => {
+                                                const latestPrice = edition.history[edition.history.length - 1];
+                                                return (
+                                                    <div key={edition.priceChartingId} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                                                        <h4 className="text-white font-medium mb-3">{edition.name}</h4>
+                                                        <div className="space-y-2">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400 text-sm">Complete:</span>
+                                                                <span className="text-cyan-400 font-medium">${latestPrice.completeInBox.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400 text-sm">Loose:</span>
+                                                                <span className="text-yellow-400 font-medium">${latestPrice.loose.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400 text-sm">New:</span>
+                                                                <span className="text-green-400 font-medium">${latestPrice.new.toFixed(2)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
                                     </div>
                                 </>
                             )}
 
                             {/* No Data State */}
-                            {!pricingHistoryLoading && !pricingHistoryError && pricingHistoryData.length === 0 && (
+                            {!pricingHistoryLoading && !pricingHistoryError && (pricingHistoryData.length === 0 || !pricingHistoryData.some(edition => edition.history && edition.history.length > 0)) && (
                                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
                                     <div className="text-center text-gray-400 py-12">
                                         <div className="text-6xl mb-4">📊</div>
-                                        <p className="text-lg mb-2">No Pricing Data Available</p>
+                                        <p className="text-lg mb-2">No Pricing History Available</p>
                                         <p className="text-sm text-gray-500 mb-4">
                                             This game doesn't have any pricing history data available from PriceCharting.
                                         </p>
