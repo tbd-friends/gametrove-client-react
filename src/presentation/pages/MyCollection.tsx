@@ -3,7 +3,9 @@ import { AlertCircle, Search, List, Grid3X3, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { consoleNameToSlug } from "../utils/slugUtils";
-import { usePagination, useGamesData, useBarcodeScanner } from "../hooks";
+import { usePagination, useGamesData, useBarcodeScanner, usePriceCharting } from "../hooks";
+import { createPriceChartingApiService } from "../../infrastructure/api";
+import { useAuthService } from "../hooks/useAuthService";
 import {
   GamesTable,
   ConsolesGrid,
@@ -33,17 +35,56 @@ export const MyCollection: React.FC = () => {
     const navigate = useNavigate();
     const { consoleName } = useParams<{ consoleName?: string }>();
 
+    const authService = useAuthService();
+    const { isEnabled: isPriceChartingEnabled } = usePriceCharting();
+
     // Barcode scanner integration
-    const handleBarcodeScanned = React.useCallback((barcode: string) => {
+    const handleBarcodeScanned = React.useCallback(async (barcode: string) => {
         console.log('🔍 Complete barcode scanned, setting search value:', barcode);
         setIsProgrammaticUpdate(true);
         setSearchValue(barcode);
+        setLastBarcodeSearch(barcode); // Track this as a barcode search
         // Reset the flag after a brief delay
         setTimeout(() => setIsProgrammaticUpdate(false), 100);
-        
-        // Optional: Show a brief notification that barcode was detected
-        // You could add a toast notification here if needed
     }, []);
+
+    // Function to search PriceCharting when barcode not found in collection
+    const searchPriceChartingForBarcode = React.useCallback(async (barcode: string) => {
+        try {
+            console.log('🔍 No games found in collection, searching PriceCharting for UPC:', barcode);
+            
+            const priceChartingApiService = createPriceChartingApiService(authService);
+            const results = await priceChartingApiService.searchPricing({ upc: barcode });
+            
+            if (results.length > 0) {
+                const firstResult = results[0];
+                console.log('✅ Found PriceCharting match:', firstResult);
+                
+                // Navigate to Add Game with pre-populated data
+                navigate('/add-game', {
+                    state: {
+                        autoPopulate: {
+                            name: firstResult.name,
+                            consoleName: firstResult.consoleName,
+                            upc: barcode,
+                            priceChartingId: firstResult.priceChartingId,
+                            pricing: {
+                                complete: firstResult.completeInBoxPrice,
+                                loose: firstResult.loosePrice,
+                                new: firstResult.newPrice
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.log('❌ No PriceCharting matches found for UPC:', barcode);
+                // Could show a notification here that no matches were found
+            }
+        } catch (error) {
+            console.error('❌ Failed to search PriceCharting:', error);
+            // Could show error notification here
+        }
+    }, [authService, navigate]);
 
     const { clearBuffer } = useBarcodeScanner({
         onBarcodeScanned: handleBarcodeScanned,
@@ -83,6 +124,9 @@ export const MyCollection: React.FC = () => {
         hasSelectedConsole: Boolean(consoleName),
         searchTerm: searchValue
     });
+
+    // Track the last barcode search to check if we need to search PriceCharting
+    const [lastBarcodeSearch, setLastBarcodeSearch] = React.useState<string | null>(null);
 
     // Sync pagination data when games are loaded
     React.useEffect(() => {
@@ -151,6 +195,22 @@ export const MyCollection: React.FC = () => {
         console.log('🔍 Final filtered games:', filtered.length, 'Search handled by API:', !!searchValue);
         return filtered;
     }, [games, selectedConsole, searchValue]);
+
+    // Check if we need to search PriceCharting after games are loaded
+    React.useEffect(() => {
+        // Only check if this was a barcode search, games are loaded, no games found, and PriceCharting is enabled
+        if (lastBarcodeSearch && 
+            !loading && 
+            !paginationLoading && 
+            filteredGames.length === 0 && 
+            isPriceChartingEnabled && 
+            searchValue === lastBarcodeSearch) {
+            
+            console.log('🔍 Barcode search completed with no results, checking PriceCharting');
+            searchPriceChartingForBarcode(lastBarcodeSearch);
+            setLastBarcodeSearch(null); // Clear to prevent repeated searches
+        }
+    }, [lastBarcodeSearch, loading, paginationLoading, filteredGames.length, isPriceChartingEnabled, searchValue, searchPriceChartingForBarcode]);
 
     // Set view mode based on console selection and screen size
     useEffect(() => {

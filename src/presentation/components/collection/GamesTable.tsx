@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gamepad2, Plus } from 'lucide-react';
+import { Gamepad2 } from 'lucide-react';
 import type { Game } from '../../../domain/models';
 import { consoleNameToSlug } from '../../utils/slugUtils';
 
@@ -31,12 +31,11 @@ export const GamesTable: React.FC<GamesTableProps> = ({
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Platform</th>
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
-              <th className="text-left text-gray-400 text-sm font-medium pb-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colSpan={5} className="py-12 text-center">
+              <td colSpan={4} className="py-12 text-center">
                 <div className="text-gray-400">
                   <Gamepad2 className="mx-auto mb-3 opacity-50" size={48} />
                   <p className="text-lg mb-2">No games found</p>
@@ -66,7 +65,6 @@ export const GamesTable: React.FC<GamesTableProps> = ({
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Platform</th>
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
-            <th className="text-left text-gray-400 text-sm font-medium pb-3">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -115,18 +113,6 @@ export const GamesTable: React.FC<GamesTableProps> = ({
                 <span className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium">
                   {game.copyCount}
                 </span>
-              </td>
-              <td className="py-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log('Add copy for game:', game.id);
-                  }}
-                  className="text-cyan-400 hover:text-cyan-300 p-1 rounded-md hover:bg-slate-600 transition-colors"
-                  title="Add copy"
-                >
-                  <Plus size={16} />
-                </button>
               </td>
             </tr>
           ))}

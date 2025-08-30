@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, ChevronRight, Loader2, FileText, Save } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { PlatformCombobox } from "../components/forms/PlatformCombobox";
-import { useIgdbSearch } from "../hooks";
+import { useIgdbSearch, usePlatforms } from "../hooks";
 import type { Platform, IgdbGame } from "../../domain/models";
 import { IgdbUtils } from "../../domain/models";
 import { createGameApiService } from "../../infrastructure/api";
@@ -12,6 +12,7 @@ import { useAuthService } from "../hooks/useAuthService";
 
 export const AddGame: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const authService = useAuthService();
     const [gameTitle, setGameTitle] = useState("");
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
@@ -28,7 +29,106 @@ export const AddGame: React.FC = () => {
     
     // Use IGDB search hook
     const { results: searchResults, loading: isSearching, error: searchError, hasSearched, searchGames, clearResults } = useIgdbSearch();
+    
+    // Use platforms hook for auto-selection
+    const { platforms } = usePlatforms();
 
+    // Function to match PriceCharting console name to platform
+    const findMatchingPlatform = (consoleName: string): Platform | null => {
+        if (!consoleName || platforms.length === 0) return null;
+        
+        const searchTerm = consoleName.toLowerCase();
+        console.log('🎮 Searching for platform match for:', consoleName, 'in', platforms.length, 'platforms');
+        
+        // Try exact match first
+        let match = platforms.find(platform => 
+            platform.description.toLowerCase() === searchTerm
+        );
+        
+        if (match) {
+            console.log('✅ Found exact platform match:', match.description);
+            return match;
+        }
+        
+        // Try partial matches with common mappings
+        const mappings: Record<string, string[]> = {
+            'playstation': ['playstation', 'ps'],
+            'xbox': ['xbox'],
+            'nintendo switch': ['nintendo switch', 'switch'],
+            'nintendo 3ds': ['nintendo 3ds', '3ds'],
+            'nintendo ds': ['nintendo ds', 'ds'],
+            'wii u': ['wii u'],
+            'wii': ['wii'],
+            'gamecube': ['gamecube', 'game cube'],
+            'pc': ['pc', 'steam', 'windows'],
+            'psp': ['psp', 'playstation portable'],
+            'ps vita': ['ps vita', 'vita', 'playstation vita']
+        };
+        
+        // Look for matches in our mappings
+        for (const [key, synonyms] of Object.entries(mappings)) {
+            if (synonyms.some(synonym => searchTerm.includes(synonym))) {
+                match = platforms.find(platform => 
+                    synonyms.some(synonym => platform.description.toLowerCase().includes(synonym))
+                );
+                if (match) {
+                    console.log('✅ Found mapped platform match:', match.description, 'for', consoleName);
+                    return match;
+                }
+            }
+        }
+        
+        // Try fuzzy matching - contains search
+        match = platforms.find(platform => 
+            platform.description.toLowerCase().includes(searchTerm) ||
+            searchTerm.includes(platform.description.toLowerCase())
+        );
+        
+        if (match) {
+            console.log('✅ Found fuzzy platform match:', match.description, 'for', consoleName);
+            return match;
+        }
+        
+        console.log('❌ No platform match found for:', consoleName);
+        console.log('Available platforms:', platforms.map(p => p.description));
+        return null;
+    };
+
+    // Handle auto-population from barcode scanning
+    useEffect(() => {
+        const autoPopulate = (location.state as any)?.autoPopulate;
+        if (autoPopulate) {
+            console.log('🔍 Auto-populating Add Game form with PriceCharting data:', autoPopulate);
+            console.log('🔍 Platforms loaded:', platforms.length, 'platforms available');
+            
+            // Set the game title
+            if (autoPopulate.name) {
+                setGameTitle(autoPopulate.name);
+                console.log('📝 Set game title:', autoPopulate.name);
+            }
+            
+            // Try to match and set the platform based on consoleName
+            if (autoPopulate.consoleName) {
+                if (platforms.length > 0) {
+                    console.log('🎮 Attempting to match platform:', autoPopulate.consoleName);
+                    const matchedPlatform = findMatchingPlatform(autoPopulate.consoleName);
+                    if (matchedPlatform) {
+                        setSelectedPlatform(matchedPlatform);
+                        console.log('🎮 ✅ Auto-selected platform:', matchedPlatform.description);
+                    } else {
+                        console.log('🎮 ❌ Could not match platform:', autoPopulate.consoleName);
+                    }
+                } else {
+                    console.log('🎮 ⏳ Platforms not loaded yet, will retry when platforms are available');
+                    // Don't clear the navigation state yet - let it retry when platforms load
+                    return;
+                }
+            }
+            
+            // Clear the navigation state so it doesn't re-trigger
+            navigate(location.pathname, { replace: true });
+        }
+    }, [location, navigate, platforms]);
 
     // Auto-search when both fields are filled
     useEffect(() => {
