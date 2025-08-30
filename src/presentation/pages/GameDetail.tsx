@@ -17,7 +17,7 @@ import {mapApiConditionToGameCondition} from "../../domain/models";
 export const GameDetail: React.FC = () => {
     const navigate = useNavigate();
     const {gameId, consoleName} = useParams<{ gameId: string; consoleName?: string }>();
-    const [activeTab, setActiveTab] = useState<'details' | 'copies'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'copies' | 'pricecharting'>('details');
     const [game, setGame] = useState<Game | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -566,6 +566,18 @@ export const GameDetail: React.FC = () => {
                             >
                                 Copies ({displayData.totalCopies})
                             </button>
+                            {isPriceChartingEnabled && (
+                                <button
+                                    onClick={() => setActiveTab('pricecharting')}
+                                    className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                                        activeTab === 'pricecharting'
+                                            ? 'text-cyan-400 border-cyan-400'
+                                            : 'text-gray-400 border-transparent hover:text-gray-300'
+                                    }`}
+                                >
+                                    PriceCharting
+                                </button>
+                            )}
                         </nav>
                     </div>
 
@@ -792,6 +804,21 @@ export const GameDetail: React.FC = () => {
                                         <p>No copies found in your collection.</p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'pricecharting' && isPriceChartingEnabled && (
+                        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-semibold text-white">PriceCharting Data</h3>
+                            </div>
+                            <div className="text-center text-gray-400 py-12">
+                                <div className="text-6xl mb-4">📊</div>
+                                <p className="text-lg mb-2">Pricing Charts Coming Soon</p>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    This tab will display historical pricing data and trends for your game copies using Recharts.
+                                </p>
                             </div>
                         </div>
                     )}
