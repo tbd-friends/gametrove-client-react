@@ -31,12 +31,28 @@ export interface PriceChartingHistoryEntry {
 }
 
 /**
+ * PriceCharting statistics for price changes
+ */
+export interface PriceChartingStatistics {
+    completeInBoxPercentageChange: number;
+    completeInBoxPercentageChange12Months: number;
+    loosePercentageChange: number;
+    loosePercentageChange12Months: number;
+    newPercentageChange: number;
+    newPercentageChange12Months: number;
+}
+
+/**
  * PriceCharting history data for a single edition/variant
  */
 export interface PriceChartingHistoryData {
     priceChartingId: number;
     name: string;
     lastUpdated: string;
+    completeInBox: number;
+    loose: number;
+    new: number;
+    statistics: PriceChartingStatistics;
     history: PriceChartingHistoryEntry[];
 }
 
@@ -46,27 +62,38 @@ export interface PriceChartingHistoryData {
 export interface PriceChartingApiService {
     searchPricing(params: PriceChartingSearchParams): Promise<PriceChartingSearchResult[]>;
     getPriceHistory(gameId: string): Promise<PriceChartingHistoryData[]>;
+    triggerPricingUpdate(): Promise<void>;
 }
 
 export function createPriceChartingApiService(authService: IAuthenticationService): PriceChartingApiService {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7054';
     const searchEndpoint = '/api/pricecharting/search';
     const historyEndpoint = '/api/pricecharting';
+    const defaultTimeout = 30000; // 30 seconds for regular requests
+    const pricingUpdateTimeout = 120000; // 2 minutes for pricing updates
 
     async function makeAuthenticatedRequest<T>(
         url: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        timeoutMs: number = defaultTimeout
     ): Promise<T> {
         try {
             const token = await authService.getAccessToken();
             
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
             const response = await fetch(`${baseUrl}${url}`, {
                 ...options,
+                signal: controller.signal,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     ...options.headers,
                 },
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -77,6 +104,9 @@ export function createPriceChartingApiService(authService: IAuthenticationServic
 
             return await response.json();
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error(`Request timed out after ${timeoutMs / 1000} seconds`);
+            }
             console.error('API request failed:', error);
             throw error;
         }
@@ -122,6 +152,20 @@ export function createPriceChartingApiService(authService: IAuthenticationServic
                 throw new Error('Invalid response format from PriceCharting history API');
             } catch (error) {
                 console.error('Failed to fetch PriceCharting history:', error);
+                throw error;
+            }
+        },
+
+        async triggerPricingUpdate(): Promise<void> {
+            try {
+                console.log(`🔄 Triggering pricing update`);
+
+                const url = `/api/pricecharting/update`;
+                await makeAuthenticatedRequest<void>(url, { method: 'POST' }, pricingUpdateTimeout);
+
+                console.log(`✅ Pricing update triggered successfully`);
+            } catch (error) {
+                console.error('Failed to trigger pricing update:', error);
                 throw error;
             }
         }

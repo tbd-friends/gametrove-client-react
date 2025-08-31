@@ -8,6 +8,7 @@ import {PublisherCombobox} from "../components/forms/PublisherCombobox";
 import {PriceChartingSearchDialog} from "../components/dialogs/PriceChartingSearchDialog";
 import {PriceHistoryChart} from "../components/charts/PriceHistoryChart";
 import {slugToDisplayName} from "../utils/slugUtils";
+import {formatPercentageChange} from "../utils/priceUtils";
 import {
     createGameApiService,
     createIgdbApiService,
@@ -926,6 +927,13 @@ export const GameDetail: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             {pricingHistoryData
                                                 .map(edition => {
+                                                    const newStats = formatPercentageChange(edition.statistics.newPercentageChange);
+                                                    const newStats12M = formatPercentageChange(edition.statistics.newPercentageChange12Months);
+                                                    const completeStats = formatPercentageChange(edition.statistics.completeInBoxPercentageChange);
+                                                    const completeStats12M = formatPercentageChange(edition.statistics.completeInBoxPercentageChange12Months);
+                                                    const looseStats = formatPercentageChange(edition.statistics.loosePercentageChange);
+                                                    const looseStats12M = formatPercentageChange(edition.statistics.loosePercentageChange12Months);
+
                                                     return (
                                                         <div key={edition.priceChartingId}>
                                                             <h4 className="text-white font-semibold mb-3 text-center">{edition.name}</h4>
@@ -942,7 +950,17 @@ export const GameDetail: React.FC = () => {
                                                                         </div>
                                                                     </div>
                                                                     <div
-                                                                        className="text-2xl font-bold text-green-400">${edition.new.toFixed(2)}</div>
+                                                                        className="text-2xl font-bold text-green-400 mb-2">${edition.new.toFixed(2)}</div>
+                                                                    <div className="space-y-1 text-xs">
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-400">Recent:</span>
+                                                                            <span className={newStats.colorClass}>{newStats.displayText}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-400">12 months:</span>
+                                                                            <span className={newStats12M.colorClass}>{newStats12M.displayText}</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Complete */}
@@ -957,7 +975,17 @@ export const GameDetail: React.FC = () => {
                                                                         </div>
                                                                     </div>
                                                                     <div
-                                                                        className="text-2xl font-bold text-cyan-400">${edition.completeInBox.toFixed(2)}</div>
+                                                                        className="text-2xl font-bold text-cyan-400 mb-2">${edition.completeInBox.toFixed(2)}</div>
+                                                                    <div className="space-y-1 text-xs">
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-400">Recent:</span>
+                                                                            <span className={completeStats.colorClass}>{completeStats.displayText}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-400">12 months:</span>
+                                                                            <span className={completeStats12M.colorClass}>{completeStats12M.displayText}</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Loose */}
@@ -972,7 +1000,17 @@ export const GameDetail: React.FC = () => {
                                                                         </div>
                                                                     </div>
                                                                     <div
-                                                                        className="text-2xl font-bold text-yellow-400">${edition.loose.toFixed(2)}</div>
+                                                                        className="text-2xl font-bold text-yellow-400 mb-2">${edition.loose.toFixed(2)}</div>
+                                                                    <div className="space-y-1 text-xs">
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-400">Recent:</span>
+                                                                            <span className={looseStats.colorClass}>{looseStats.displayText}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-gray-400">12 months:</span>
+                                                                            <span className={looseStats12M.colorClass}>{looseStats12M.displayText}</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1008,7 +1046,7 @@ export const GameDetail: React.FC = () => {
                     )}
 
                     {/* Bottom Actions */}
-                    <div className="flex items-center justify-between pt-6 border-t border-slate-700">
+                    <div className="flex items-center justify-start pt-6 border-t border-slate-700">
                         <button
                             onClick={() => {
                                 if (consoleName) {
@@ -1022,23 +1060,6 @@ export const GameDetail: React.FC = () => {
                             <ArrowLeft size={16}/>
                             {consoleName ? `Back to ${slugToDisplayName(consoleName)}` : 'Back to Collection'}
                         </button>
-
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={handleEditGame}
-                                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
-                            >
-                                <Edit size={16}/>
-                                Edit Game
-                            </button>
-                            <button
-                                onClick={handleRemoveFromCollection}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors"
-                            >
-                                <Trash2 size={16}/>
-                                Remove from Collection
-                            </button>
-                        </div>
                     </div>
 
                     {/* Edit Dialog */}

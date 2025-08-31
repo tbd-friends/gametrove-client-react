@@ -1,0 +1,86 @@
+[
+	{
+		"priceChartingId": 37996,
+		"name": "1942 [5 Screw]",
+		"lastUpdated": "2025-08-11T15:46:45.43",
+		"completeInBox": 49.99,
+		"loose": 14.82,
+		"new": 200.00,
+		"statistics": {
+			"completeInBoxPercentageChange": 0.0000000000,
+			"completeInBoxPercentageChange12Months": -37.5125000000,
+			"loosePercentageChange": -6.3211125100,
+			"loosePercentageChange12Months": -8.3487940600,
+			"newPercentageChange": 0.0000000000,
+			"newPercentageChange12Months": -37.5000000000
+		},
+		"history": [
+			{
+				"completeInBox": 49.99,
+				"loose": 15.82,
+				"new": 200.00,
+				"captured": "2025-07-26T00:00:00"
+			},
+			{
+				"completeInBox": 50.95,
+				"loose": 14.06,
+				"new": 204.00,
+				"captured": "2025-06-21T00:00:00"
+			},
+			{
+				"completeInBox": 70.09,
+				"loose": 17.77,
+				"new": 280.00,
+				"captured": "2025-05-17T00:00:00"
+			},
+			{
+				"completeInBox": 70.08,
+				"loose": 17.63,
+				"new": 280.00,
+				"captured": "2025-04-24T00:00:00"
+			},
+			{
+				"completeInBox": 63.71,
+				"loose": 16.74,
+				"new": 255.00,
+				"captured": "2025-04-07T00:00:00"
+			},
+			{
+				"completeInBox": 74.88,
+				"loose": 15.03,
+				"new": 300.00,
+				"captured": "2025-03-26T00:00:00"
+			},
+			{
+				"completeInBox": 79.00,
+				"loose": 15.83,
+				"new": 316.00,
+				"captured": "2025-03-04T00:00:00"
+			},
+			{
+				"completeInBox": 79.00,
+				"loose": 15.96,
+				"new": 316.00,
+				"captured": "2025-02-25T00:00:00"
+			},
+			{
+				"completeInBox": 79.00,
+				"loose": 16.15,
+				"new": 316.00,
+				"captured": "2025-02-09T00:00:00"
+			},
+			{
+				"completeInBox": 78.54,
+				"loose": 15.98,
+				"new": 314.00,
+				"captured": "2025-01-19T00:00:00"
+			},
+			{
+				"completeInBox": 78.00,
+				"loose": 15.11,
+				"new": 312.00,
+				"captured": "2024-09-04T00:00:00"
+			}
+		]
+	}
+]
