@@ -1,14 +1,16 @@
 import React, {useState, useEffect} from "react";
-import {TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload, Trash2} from "lucide-react";
+import {TrendingUp, Eye, EyeOff, Copy, RotateCcw, Upload} from "lucide-react";
 import {usePlatforms, useIgdbPlatforms} from "../hooks";
 import {createPlatformApiService} from "../../infrastructure/api/PlatformApiService";
 import type {PlatformMappingRequest} from "../../infrastructure/api/PlatformApiService";
 import {createProfileApiService} from "../../infrastructure/api/ProfileApiService";
 import type {UserProfile, UpdatePriceChartingApiKeyRequest} from "../../infrastructure/api/ProfileApiService";
+import {createPriceChartingApiService} from "../../infrastructure/api/PriceChartingApiService";
 import {useAuthService} from "../hooks/useAuthService";
 import {useProfile} from "../../application/context/ProfileContext";
 import {IgdbPlatformCombobox} from "../components/forms";
 import type {IgdbPlatform} from "../../domain/models/IgdbGame";
+import type {Platform} from "../../domain/models/Platform";
 
 type TabType = "profile" | "pricecharting" | "igdb";
 
@@ -35,6 +37,11 @@ export const Settings: React.FC = () => {
     const [originalPriceChartingApiKey, setOriginalPriceChartingApiKey] = useState("");
     const [priceChartingSaveLoading, setPriceChartingSaveLoading] = useState(false);
     const [priceChartingSaveError, setPriceChartingSaveError] = useState<string | null>(null);
+
+    // PriceCharting trigger update state
+    const [triggerUpdateLoading, setTriggerUpdateLoading] = useState(false);
+    const [triggerUpdateError, setTriggerUpdateError] = useState<string | null>(null);
+    const [triggerUpdateSuccess, setTriggerUpdateSuccess] = useState(false);
 
     const {platforms, loading: platformsLoading} = usePlatforms();
     const {platforms: igdbPlatforms, loading: igdbPlatformsLoading, reloadPlatforms} = useIgdbPlatforms();
@@ -267,6 +274,30 @@ export const Settings: React.FC = () => {
         }
     };
 
+    const triggerPriceUpdate = async () => {
+        if (!profile?.hasPriceChartingApiKey) {
+            setTriggerUpdateError('PriceCharting API key is required to trigger pricing updates');
+            return;
+        }
+
+        try {
+            setTriggerUpdateLoading(true);
+            setTriggerUpdateError(null);
+            setTriggerUpdateSuccess(false);
+
+            const priceChartingApiService = createPriceChartingApiService(authService);
+            await priceChartingApiService.triggerPricingUpdate();
+
+            setTriggerUpdateSuccess(true);
+            console.log('✅ Price update triggered successfully');
+        } catch (error) {
+            console.error('❌ Failed to trigger price update:', error);
+            setTriggerUpdateError(error instanceof Error ? error.message : 'Failed to trigger price update');
+        } finally {
+            setTriggerUpdateLoading(false);
+        }
+    };
+
     const renderProfileTab = () => {
         if (profileLoading) {
             return (
@@ -454,6 +485,64 @@ export const Settings: React.FC = () => {
                         Save Changes
                     </button>
                 </div>
+
+                {/* Trigger Pricing Update - Only show if PriceCharting is enabled */}
+                {profile?.hasPriceChartingApiKey && (
+                    <div>
+                        <h4 className="text-lg font-semibold text-white mb-4">Trigger Pricing Update</h4>
+                        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                            <p className="text-gray-400 mb-4">
+                                Manually trigger an update to the current market prices for your games. This will use your
+                                connected PriceCharting account to fetch the latest prices.
+                            </p>
+                            {/* Success/Error Message */}
+                            {(triggerUpdateError || triggerUpdateSuccess) && (
+                                <div className={`p-4 rounded-lg mb-4 ${
+                                    triggerUpdateError
+                                        ? 'bg-red-900/20 border border-red-500'
+                                        : 'bg-green-900/20 border border-green-500'
+                                }`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-${triggerUpdateError ? 'red' : 'green'}-400`}>
+                                            {triggerUpdateError ? '❌' : '✅'}
+                                        </span>
+                                        <div>
+                                            <p className={`text-${triggerUpdateError ? 'red' : 'green'}-400 font-medium`}>
+                                                {triggerUpdateError ? 'Failed to trigger update' : 'Update triggered successfully'}
+                                            </p>
+                                            {triggerUpdateError ? (
+                                                <p className="text-red-300 text-sm mt-1">{triggerUpdateError}</p>
+                                            ) : (
+                                                <p className="text-green-300 text-sm mt-1">
+                                                    The pricing update will be processed in the background. You will be notified
+                                                    when it's complete.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={triggerPriceUpdate}
+                                disabled={triggerUpdateLoading}
+                                className="w-full px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                            >
+                                {triggerUpdateLoading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                        <span>Triggering Update...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <TrendingUp className="w-4 h-4"/>
+                                        <span>Trigger Pricing Update</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };

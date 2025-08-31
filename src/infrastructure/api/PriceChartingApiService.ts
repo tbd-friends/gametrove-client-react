@@ -43,6 +43,15 @@ export interface PriceChartingStatistics {
 }
 
 /**
+ * PriceCharting highlight entry for games with significant price changes
+ */
+export interface PriceChartingHighlight {
+    gameIdentifier: string;
+    name: string;
+    differencePercentage: number;
+}
+
+/**
  * PriceCharting history data for a single edition/variant
  */
 export interface PriceChartingHistoryData {
@@ -62,6 +71,7 @@ export interface PriceChartingHistoryData {
 export interface PriceChartingApiService {
     searchPricing(params: PriceChartingSearchParams): Promise<PriceChartingSearchResult[]>;
     getPriceHistory(gameId: string): Promise<PriceChartingHistoryData[]>;
+    getHighlights(): Promise<PriceChartingHighlight[]>;
     triggerPricingUpdate(): Promise<void>;
 }
 
@@ -69,6 +79,7 @@ export function createPriceChartingApiService(authService: IAuthenticationServic
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7054';
     const searchEndpoint = '/api/pricecharting/search';
     const historyEndpoint = '/api/pricecharting';
+    const highlightsEndpoint = '/api/pricecharting/highlights';
     const defaultTimeout = 30000; // 30 seconds for regular requests
     const pricingUpdateTimeout = 120000; // 2 minutes for pricing updates
 
@@ -152,6 +163,24 @@ export function createPriceChartingApiService(authService: IAuthenticationServic
                 throw new Error('Invalid response format from PriceCharting history API');
             } catch (error) {
                 console.error('Failed to fetch PriceCharting history:', error);
+                throw error;
+            }
+        },
+
+        async getHighlights(): Promise<PriceChartingHighlight[]> {
+            try {
+                console.log('📈 Fetching PriceCharting highlights');
+                
+                const results = await makeAuthenticatedRequest<PriceChartingHighlight[]>(highlightsEndpoint);
+                
+                if (Array.isArray(results)) {
+                    console.log(`✅ Found ${results.length} pricing highlights`);
+                    return results;
+                }
+                
+                throw new Error('Invalid response format from PriceCharting highlights API');
+            } catch (error) {
+                console.error('Failed to fetch PriceCharting highlights:', error);
                 throw error;
             }
         },

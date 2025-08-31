@@ -1,7 +1,53 @@
-import React from "react";
-import {Gamepad2, Copy, Monitor, Building, MoreVertical} from "lucide-react";
+import React, {useState, useEffect} from "react";
+import {Gamepad2, Copy, Monitor, Building, MoreVertical, TrendingUp, AlertCircle} from "lucide-react";
+import {useNavigate} from "react-router-dom";
+import {createPriceChartingApiService} from "../../infrastructure/api";
+import type {PriceChartingHighlight} from "../../infrastructure/api";
+import {useAuthService} from "../hooks/useAuthService";
+import {usePriceCharting} from "../hooks";
+import {formatPercentageChange} from "../utils/priceUtils";
 
 export const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
+    const authService = useAuthService();
+    const {isEnabled: isPriceChartingEnabled} = usePriceCharting();
+
+    // Price highlights state
+    const [highlights, setHighlights] = useState<PriceChartingHighlight[]>([]);
+    const [highlightsLoading, setHighlightsLoading] = useState(false);
+    const [highlightsError, setHighlightsError] = useState<string | null>(null);
+
+    // Load price highlights when PriceCharting is enabled
+    useEffect(() => {
+        async function loadHighlights() {
+            if (!isPriceChartingEnabled || !authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setHighlightsLoading(true);
+                setHighlightsError(null);
+
+                const priceChartingApiService = createPriceChartingApiService(authService);
+                const highlightsData = await priceChartingApiService.getHighlights();
+
+                setHighlights(highlightsData);
+                console.log('✅ Loaded price highlights:', highlightsData);
+            } catch (err) {
+                console.error('❌ Failed to load price highlights:', err);
+                setHighlightsError(err instanceof Error ? err.message : 'Failed to load price highlights');
+            } finally {
+                setHighlightsLoading(false);
+            }
+        }
+
+        loadHighlights();
+    }, [isPriceChartingEnabled, authService.isAuthenticated, authService]);
+
+    const handleHighlightClick = (gameIdentifier: string) => {
+        navigate(`/collection/game/${gameIdentifier}`);
+    };
+
     const statsCards = [
         {
             title: "Total Games",
@@ -77,6 +123,76 @@ export const Dashboard: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Price Highlights Section - Only show if PriceCharting is enabled */}
+            {isPriceChartingEnabled && (
+                <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <TrendingUp className="text-orange-400" size={24} />
+                        <h2 className="text-xl font-semibold text-white">Price Highlights</h2>
+                        <span className="text-gray-400 text-sm">Games with significant price changes</span>
+                    </div>
+
+                    {/* Loading State */}
+                    {highlightsLoading && (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400"></div>
+                            <span className="ml-3 text-gray-400">Loading price highlights...</span>
+                        </div>
+                    )}
+
+                    {/* Error State */}
+                    {highlightsError && !highlightsLoading && (
+                        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 flex items-center gap-3">
+                            <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
+                            <div>
+                                <h3 className="text-red-400 font-medium">Failed to load price highlights</h3>
+                                <p className="text-gray-300 text-sm mt-1">{highlightsError}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Success State - Highlights Grid */}
+                    {!highlightsLoading && !highlightsError && highlights.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {highlights.map((highlight) => {
+                                const changeFormatted = formatPercentageChange(highlight.differencePercentage);
+                                
+                                return (
+                                    <div
+                                        key={highlight.gameIdentifier}
+                                        onClick={() => handleHighlightClick(highlight.gameIdentifier)}
+                                        className="bg-slate-700 rounded-lg p-4 hover:bg-slate-600 transition-colors cursor-pointer group"
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="text-white font-semibold group-hover:text-cyan-400 transition-colors text-sm line-clamp-2">
+                                                {highlight.name}
+                                            </h3>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-400 text-xs">Price change:</span>
+                                            <span className={`text-sm font-bold ${changeFormatted.colorClass}`}>
+                                                {changeFormatted.displayText}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* No Data State */}
+                    {!highlightsLoading && !highlightsError && highlights.length === 0 && (
+                        <div className="text-center text-gray-400 py-8">
+                            <TrendingUp className="mx-auto mb-3 text-gray-500" size={32} />
+                            <p className="text-lg mb-2">No Price Highlights</p>
+                            <p className="text-sm text-gray-500">
+                                No games have significant price changes at the moment.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Recent Games Section */}
             <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
