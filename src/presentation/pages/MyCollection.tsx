@@ -21,9 +21,13 @@ interface Console {
 }
 
 const COLLECTION_VIEW_KEY = 'gametrove_collection_view_mode';
+const COLLECTION_SEARCH_KEY = 'gametrove_collection_search';
 
 export const MyCollection: React.FC = () => {
-    const [searchValue, setSearchValue] = useState('');
+    // Initialize search value from localStorage
+    const [searchValue, setSearchValue] = useState(() => {
+        return localStorage.getItem(COLLECTION_SEARCH_KEY) || '';
+    });
     const [isScanning, setIsScanning] = useState(false);
     const [isProgrammaticUpdate, setIsProgrammaticUpdate] = useState(false);
     const [isSearchFieldFocused, setIsSearchFieldFocused] = useState(false);
@@ -229,6 +233,15 @@ export const MyCollection: React.FC = () => {
             // On desktop, keep the saved preference (already loaded from localStorage)
         }
     }, [selectedConsole, consoleName, navigate]);
+
+    // Persist search value to localStorage whenever it changes
+    useEffect(() => {
+        if (searchValue) {
+            localStorage.setItem(COLLECTION_SEARCH_KEY, searchValue);
+        } else {
+            localStorage.removeItem(COLLECTION_SEARCH_KEY);
+        }
+    }, [searchValue]);
 
     // Reset pagination when switching views or search changes
     useEffect(() => {

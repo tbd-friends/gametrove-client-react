@@ -609,11 +609,9 @@ export const GameDetail: React.FC = () => {
                             )}
                             {/* Age Rating Badge */}
                             {(() => {
-                                console.log('🔍 IGDB age ratings debug:', igdbDetails?.ageRatings);
                                 const pegiRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('PEGI'));
                                 const esrbRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('ESRB'));
                                 const displayRating = esrbRating || pegiRating;
-                                console.log('🎯 Display rating:', displayRating);
                                 
                                 return displayRating ? (
                                     <div className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
