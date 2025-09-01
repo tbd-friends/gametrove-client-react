@@ -607,11 +607,20 @@ export const GameDetail: React.FC = () => {
                             ) : (
                                 <span className="text-6xl">{displayData.coverImage}</span>
                             )}
-                            {/* ESRB Rating Badge */}
-                            <div
-                                className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
-                                <span className="text-white text-xs font-bold">ESRB: {displayData.esrb}</span>
-                            </div>
+                            {/* Age Rating Badge */}
+                            {(() => {
+                                console.log('🔍 IGDB age ratings debug:', igdbDetails?.ageRatings);
+                                const pegiRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('PEGI'));
+                                const esrbRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('ESRB'));
+                                const displayRating = esrbRating || pegiRating;
+                                console.log('🎯 Display rating:', displayRating);
+                                
+                                return displayRating ? (
+                                    <div className="absolute top-2 left-2 bg-slate-900 border border-slate-600 rounded px-2 py-1">
+                                        <span className="text-white text-xs font-bold">{displayRating}</span>
+                                    </div>
+                                ) : null;
+                            })()}
                         </div>
 
                         {/* Game Info */}
@@ -677,16 +686,76 @@ export const GameDetail: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Rating and ESRB */}
-                            <div className="flex items-center gap-6 mb-6">
-                                <div className="flex items-center gap-2">
-                                    <Star className="text-yellow-400 fill-current" size={20}/>
-                                    <span className="text-white font-semibold">{displayData.rating}</span>
-                                    <span className="text-gray-400">({displayData.reviewCount} reviews)</span>
-                                </div>
-                                <div className="text-gray-400">
-                                    ESRB: <span className="text-white font-medium">{displayData.esrb}</span>
-                                </div>
+                            {/* Review Score or Age Rating */}
+                            <div className="mb-6">
+                                {game?.review?.overallRating ? (
+                                    <div>
+                                        <div className="flex items-center gap-4 mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-400 text-sm">My Rating:</span>
+                                                <span className={`text-2xl font-bold ${
+                                                    game.review.overallRating < 35 ? 'text-red-400' :
+                                                    game.review.overallRating < 55 ? 'text-yellow-400' :
+                                                    game.review.overallRating < 75 ? 'text-blue-400' :
+                                                    'text-green-400'
+                                                }`}>
+                                                    {game.review.overallRating}
+                                                </span>
+                                                <span className="text-gray-500 text-sm">/ 100</span>
+                                            </div>
+                                            {(() => {
+                                                const pegiRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('PEGI'));
+                                                const esrbRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('ESRB'));
+                                                
+                                                const ratings = [];
+                                                if (pegiRating) ratings.push(pegiRating);
+                                                if (esrbRating) ratings.push(esrbRating);
+                                                
+                                                return ratings.length > 0 ? (
+                                                    <div className="text-gray-400">
+                                                        {ratings.map((rating, index) => (
+                                                            <span key={rating}>
+                                                                <span className="text-white font-medium">{rating}</span>
+                                                                {index < ratings.length - 1 && ' • '}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : null;
+                                            })()}
+                                        </div>
+                                        {game.review.title && (
+                                            <div className="ml-16">
+                                                <span className="text-cyan-200 italic font-medium text-lg">
+                                                    "{game.review.title}"
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-400">
+                                        {(() => {
+                                            const pegiRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('PEGI'));
+                                            const esrbRating = igdbDetails?.ageRatings?.find(rating => rating.startsWith('ESRB'));
+                                            
+                                            const ratings = [];
+                                            if (pegiRating) ratings.push(pegiRating);
+                                            if (esrbRating) ratings.push(esrbRating);
+                                            
+                                            return ratings.length > 0 ? (
+                                                <>
+                                                    {ratings.map((rating, index) => (
+                                                        <span key={rating}>
+                                                            <span className="text-white font-medium">{rating}</span>
+                                                            {index < ratings.length - 1 && ' • '}
+                                                        </span>
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                <>ESRB: <span className="text-white font-medium">{displayData.esrb}</span></>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -1,0 +1,98 @@
+{
+  "id": 1638,
+  "ageRatings": [
+    "ESRB T"
+  ],
+  "cover": {
+    "imageId": "coa0y2",
+    "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/coa0y2.jpg",
+    "medium": "//images.igdb.com/igdb/image/upload/t_720p/coa0y2.jpg",
+    "height": 1920,
+    "width": 1440
+  },
+  "name": "GoldenEye 007",
+  "summary": "GoldenEye 007 is a first-person shooter based on the 1995 James Bond film. The game features a single-player campaign with 20 missions across multiple difficulty levels, emphasizing stealth, varied objectives and mission-based progression. Players can use a range of weapons and gadgets while navigating diverse environments inspired by the movie.\n\nThe local split-screen multiplayer mode supports up to four players and offers competitive scenarios such as deathmatch, team modes and character selection from the James Bond universe. The multiplayer component became widely recognized for its influence on console FPS design and is considered a landmark feature of the game.",
+  "platforms": [
+    {
+      "name": "Nintendo 64"
+    }
+  ],
+  "genres": [
+    {
+      "name": "Shooter"
+    }
+  ],
+  "themes": [
+    {
+      "name": "Action"
+    },
+    {
+      "name": "Stealth"
+    }
+  ],
+  "screenshots": [
+    {
+      "imageId": "t1kgjejfqm6cughelyhe",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/t1kgjejfqm6cughelyhe.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/t1kgjejfqm6cughelyhe.jpg",
+      "height": 480,
+      "width": 640
+    },
+    {
+      "imageId": "zcdl7fzspbg615ugbdfr",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/zcdl7fzspbg615ugbdfr.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/zcdl7fzspbg615ugbdfr.jpg",
+      "height": 819,
+      "width": 1589
+    },
+    {
+      "imageId": "pwb0o24pyhqnpz4r54a0",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/pwb0o24pyhqnpz4r54a0.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/pwb0o24pyhqnpz4r54a0.jpg",
+      "height": 901,
+      "width": 1597
+    },
+    {
+      "imageId": "ksjmpuhjjmtyfhd7459r",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/ksjmpuhjjmtyfhd7459r.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/ksjmpuhjjmtyfhd7459r.jpg",
+      "height": 897,
+      "width": 1575
+    },
+    {
+      "imageId": "qia2pgnqystxj1pa3crp",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/qia2pgnqystxj1pa3crp.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/qia2pgnqystxj1pa3crp.jpg",
+      "height": 893,
+      "width": 1569
+    },
+    {
+      "imageId": "n0rvv6h4w2sn5yixlqln",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/n0rvv6h4w2sn5yixlqln.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/n0rvv6h4w2sn5yixlqln.jpg",
+      "height": 789,
+      "width": 1148
+    },
+    {
+      "imageId": "sohjpqvpvxx8ce6xexs5",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/sohjpqvpvxx8ce6xexs5.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/sohjpqvpvxx8ce6xexs5.jpg",
+      "height": 415,
+      "width": 580
+    },
+    {
+      "imageId": "vmpehvyu8kj60a8nw9jd",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/vmpehvyu8kj60a8nw9jd.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/vmpehvyu8kj60a8nw9jd.jpg",
+      "height": 407,
+      "width": 580
+    },
+    {
+      "imageId": "grawgtcmjcnbta4vdlum",
+      "thumbnail": "//images.igdb.com/igdb/image/upload/t_thumb/grawgtcmjcnbta4vdlum.jpg",
+      "medium": "//images.igdb.com/igdb/image/upload/t_720p/grawgtcmjcnbta4vdlum.jpg",
+      "height": 240,
+      "width": 320
+    }
+  ]
+}
