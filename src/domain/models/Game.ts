@@ -30,6 +30,12 @@ export interface Game {
 
     /** IGDB game ID if linked to IGDB */
     igdbGameId?: number | null;
+
+    /** Whether this game has a user review */
+    hasReview?: boolean;
+
+    /** Overall rating score out of 100 */
+    overallRating?: number | null;
 }
 
 /**

@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from "react";
-import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link, Plus, ChevronDown, X, Search} from "lucide-react";
+import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link, Plus, ChevronDown, X, Search, CheckCircle, Save} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from '@headlessui/react';
-import {Breadcrumb} from "../components/common";
+import {Breadcrumb, StarRating} from "../components/common";
 import {PlatformCombobox} from "../components/forms";
 import {PublisherCombobox} from "../components/forms/PublisherCombobox";
 import {PriceChartingSearchDialog} from "../components/dialogs/PriceChartingSearchDialog";
@@ -15,7 +15,7 @@ import {
     createConditionApiService,
     createPriceChartingApiService
 } from "../../infrastructure/api";
-import type {IgdbGameDetails, Condition, CreateCopyRequest, PriceChartingHistoryData} from "../../infrastructure/api";
+import type {IgdbGameDetails, Condition, CreateCopyRequest, PriceChartingHistoryData, SaveReviewRequest, GameReview} from "../../infrastructure/api";
 import {useAuthService} from "../hooks/useAuthService";
 import {usePriceCharting} from "../hooks";
 import type {Game, Platform, Publisher} from "../../domain/models";
@@ -24,7 +24,7 @@ import {mapApiConditionToGameCondition} from "../../domain/models";
 export const GameDetail: React.FC = () => {
     const navigate = useNavigate();
     const {gameId, consoleName} = useParams<{ gameId: string; consoleName?: string }>();
-    const [activeTab, setActiveTab] = useState<'details' | 'copies' | 'pricecharting'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'copies' | 'pricecharting' | 'myreview'>('details');
     const [game, setGame] = useState<Game | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -68,6 +68,23 @@ export const GameDetail: React.FC = () => {
     const [pricingHistoryData, setPricingHistoryData] = useState<PriceChartingHistoryData[]>([]);
     const [pricingHistoryLoading, setPricingHistoryLoading] = useState(false);
     const [pricingHistoryError, setPricingHistoryError] = useState<string | null>(null);
+
+    // My Review state
+    const [reviewTitle, setReviewTitle] = useState('');
+    const [reviewText, setReviewText] = useState('');
+    const [graphicsRating, setGraphicsRating] = useState(0);
+    const [soundRating, setSoundRating] = useState(0);
+    const [gameplayRating, setGameplayRating] = useState(0);
+    const [replayabilityRating, setReplayabilityRating] = useState(0);
+    const [isGameCompleted, setIsGameCompleted] = useState(false);
+    const [reviewSaveLoading, setReviewSaveLoading] = useState(false);
+    const [reviewSaveError, setReviewSaveError] = useState<string | null>(null);
+    const [reviewSaveSuccess, setReviewSaveSuccess] = useState(false);
+    
+    // Existing review state
+    const [existingReview, setExistingReview] = useState<GameReview | null>(null);
+    const [reviewLoadLoading, setReviewLoadLoading] = useState(false);
+    const [reviewLoadError, setReviewLoadError] = useState<string | null>(null);
 
     const authService = useAuthService();
     const {isEnabled: isPriceChartingEnabled} = usePriceCharting();
@@ -188,6 +205,37 @@ export const GameDetail: React.FC = () => {
 
         loadPricingHistory();
     }, [gameId, isPriceChartingEnabled, authService.isAuthenticated, authService, activeTab]);
+
+    // Load existing review when My Review tab is accessed
+    useEffect(() => {
+        async function loadExistingReview() {
+            if (!gameId || activeTab !== 'myreview' || !game?.hasReview || !authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setReviewLoadLoading(true);
+                setReviewLoadError(null);
+
+                const gameApiService = createGameApiService(authService);
+                const review = await gameApiService.getGameReview(gameId);
+
+                if (review) {
+                    setExistingReview(review);
+                    console.log('✅ Loaded existing review:', review);
+                } else {
+                    setExistingReview(null);
+                }
+            } catch (err) {
+                console.error('❌ Failed to load existing review:', err);
+                setReviewLoadError(err instanceof Error ? err.message : 'Failed to load review');
+            } finally {
+                setReviewLoadLoading(false);
+            }
+        }
+
+        loadExistingReview();
+    }, [activeTab, gameId, game?.hasReview, authService.isAuthenticated, authService]);
 
     // Close condition dropdown when clicking outside
     useEffect(() => {
@@ -451,6 +499,67 @@ export const GameDetail: React.FC = () => {
         setIsAddCopyDialogOpen(false);
     };
 
+    const handleSaveReview = async () => {
+        if (!gameId) {
+            setReviewSaveError('Game ID is required');
+            return;
+        }
+
+        try {
+            setReviewSaveLoading(true);
+            setReviewSaveError(null);
+            setReviewSaveSuccess(false);
+
+            const reviewRequest: SaveReviewRequest = {
+                title: reviewTitle.trim(),
+                content: reviewText.trim(),
+                graphicsRating,
+                soundRating,
+                gameplayRating,
+                replayabilityRating,
+                isCompleted: isGameCompleted,
+                overallRating: Math.round((graphicsRating + soundRating + gameplayRating + replayabilityRating) / 4 * 20)
+            };
+
+            const gameApiService = createGameApiService(authService);
+            await gameApiService.saveGameReview(gameId, reviewRequest);
+            
+            setReviewSaveSuccess(true);
+            console.log('✅ Review saved successfully');
+
+            // Clear the form state since we'll be showing the read-only review
+            setReviewTitle('');
+            setReviewText('');
+            setGraphicsRating(0);
+            setSoundRating(0);
+            setGameplayRating(0);
+            setReplayabilityRating(0);
+            setIsGameCompleted(false);
+
+            // Reload game data to get updated hasReview flag
+            setTimeout(async () => {
+                try {
+                    const updatedGame = await gameApiService.getGameById(gameId);
+                    if (updatedGame) {
+                        setGame(updatedGame);
+                    }
+                } catch (error) {
+                    console.error('Failed to reload game data:', error);
+                }
+            }, 500);
+
+            // Auto-hide success message after 3 seconds
+            setTimeout(() => {
+                setReviewSaveSuccess(false);
+            }, 3000);
+        } catch (error) {
+            console.error('❌ Failed to save review:', error);
+            setReviewSaveError(error instanceof Error ? error.message : 'Failed to save review');
+        } finally {
+            setReviewSaveLoading(false);
+        }
+    };
+
     return (
         <div className="w-full">
             {/* Breadcrumb Navigation */}
@@ -617,6 +726,16 @@ export const GameDetail: React.FC = () => {
                                     PriceCharting
                                 </button>
                             )}
+                            <button
+                                onClick={() => setActiveTab('myreview')}
+                                className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                                    activeTab === 'myreview'
+                                        ? 'text-cyan-400 border-cyan-400'
+                                        : 'text-gray-400 border-transparent hover:text-gray-300'
+                                }`}
+                            >
+                                My Review
+                            </button>
                         </nav>
                     </div>
 
@@ -1040,6 +1159,350 @@ export const GameDetail: React.FC = () => {
                                             PriceCharting.
                                         </p>
                                     </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'myreview' && (
+                        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
+                            {/* Loading State */}
+                            {reviewLoadLoading && (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                                    <span className="ml-3 text-gray-400">Loading review...</span>
+                                </div>
+                            )}
+
+                            {/* Error State */}
+                            {reviewLoadError && !reviewLoadLoading && (
+                                <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 flex items-center gap-3">
+                                    <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
+                                    <div>
+                                        <h3 className="text-red-400 font-medium">Failed to load review</h3>
+                                        <p className="text-gray-300 text-sm mt-1">{reviewLoadError}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Existing Review Display (Read-Only) */}
+                            {!reviewLoadLoading && !reviewLoadError && existingReview && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-xl font-semibold text-white">Your Review</h3>
+                                        
+                                        {/* Completion Status */}
+                                        {existingReview.isCompleted && (
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg">
+                                                <CheckCircle size={16} className="fill-current" />
+                                                <span className="text-sm font-medium">Completed</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Review Title */}
+                                    <div className="mb-6">
+                                        <h4 className="text-lg font-semibold text-white mb-2">{existingReview.title}</h4>
+                                    </div>
+
+                                    {/* Review Content */}
+                                    <div className="mb-8">
+                                        <div className="bg-slate-700 rounded-lg p-4">
+                                            <p className="text-gray-300 whitespace-pre-wrap">{existingReview.content}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        {/* Rating Categories (Read-Only) */}
+                                        <div className="space-y-6">
+                                            {/* Graphics Rating */}
+                                            <div>
+                                                <label className="block text-white font-medium mb-3">Graphics</label>
+                                                <StarRating 
+                                                    rating={existingReview.graphicsRating}
+                                                    onRatingChange={() => {}} // No-op for read-only
+                                                    size={24}
+                                                    readonly={true}
+                                                />
+                                            </div>
+
+                                            {/* Sound Rating */}
+                                            <div>
+                                                <label className="block text-white font-medium mb-3">Sound</label>
+                                                <StarRating 
+                                                    rating={existingReview.soundRating}
+                                                    onRatingChange={() => {}} // No-op for read-only
+                                                    size={24}
+                                                    readonly={true}
+                                                />
+                                            </div>
+
+                                            {/* Gameplay Rating */}
+                                            <div>
+                                                <label className="block text-white font-medium mb-3">Gameplay</label>
+                                                <StarRating 
+                                                    rating={existingReview.gameplayRating}
+                                                    onRatingChange={() => {}} // No-op for read-only
+                                                    size={24}
+                                                    readonly={true}
+                                                />
+                                            </div>
+
+                                            {/* Replayability Rating */}
+                                            <div>
+                                                <label className="block text-white font-medium mb-3">Replayability</label>
+                                                <StarRating 
+                                                    rating={existingReview.replayabilityRating}
+                                                    onRatingChange={() => {}} // No-op for read-only
+                                                    size={24}
+                                                    readonly={true}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Overall Score Display */}
+                                        <div className="flex items-center justify-center">
+                                            <div className="text-center">
+                                                <h4 className="text-white font-semibold mb-4">Overall Score</h4>
+                                                <div className="relative w-32 h-32 mx-auto">
+                                                    <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                                                        {/* Background circle */}
+                                                        <circle
+                                                            cx="60"
+                                                            cy="60"
+                                                            r="50"
+                                                            fill="transparent"
+                                                            stroke="rgb(71 85 105)" // slate-600
+                                                            strokeWidth="8"
+                                                        />
+                                                        {/* Progress circle */}
+                                                        <circle
+                                                            cx="60"
+                                                            cy="60"
+                                                            r="50"
+                                                            fill="transparent"
+                                                            stroke="rgb(34 211 238)" // cyan-400
+                                                            strokeWidth="8"
+                                                            strokeLinecap="round"
+                                                            strokeDasharray={`${existingReview.overallRating * 314 / 100} 314`}
+                                                            className="transition-all duration-500"
+                                                        />
+                                                    </svg>
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <span className="text-3xl font-bold text-white">
+                                                            {existingReview.overallRating}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-gray-400 text-sm mt-2">out of 100</p>
+                                                {existingReview.updatedDate && (
+                                                    <p className="text-gray-500 text-xs mt-2">
+                                                        Last updated: {new Date(existingReview.updatedDate).toLocaleDateString()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Create New Review Form */}
+                            {!reviewLoadLoading && !reviewLoadError && !existingReview && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-xl font-semibold text-white">Your Review</h3>
+                                        
+                                        {/* Game Completed Toggle */}
+                                        <div className="flex items-center gap-3">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsGameCompleted(!isGameCompleted)}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                                                        isGameCompleted
+                                                            ? 'bg-green-600 text-white'
+                                                            : 'bg-slate-700 text-gray-400 hover:bg-slate-600 hover:text-white'
+                                                    }`}
+                                                >
+                                                    <CheckCircle size={16} className={isGameCompleted ? 'fill-current' : ''} />
+                                                    <span className="text-sm font-medium">
+                                                        {isGameCompleted ? 'Completed' : 'Mark as Completed'}
+                                                    </span>
+                                                </button>
+                                            </label>
+                                        </div>
+                                    </div>
+                            
+                            {/* Review Title */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    Review Title
+                                </label>
+                                <input
+                                    type="text"
+                                    value={reviewTitle}
+                                    onChange={(e) => setReviewTitle(e.target.value)}
+                                    placeholder="A quick tagline for your review (e.g., 'Epic adventure, but too short')"
+                                    maxLength={100}
+                                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                />
+                                <div className="flex justify-between items-center mt-2">
+                                    <p className="text-gray-500 text-xs">This will appear as a quick summary under the game details</p>
+                                    <span className="text-gray-400 text-xs">{reviewTitle.length}/100</span>
+                                </div>
+                            </div>
+
+                            {/* Review Text Area */}
+                            <div className="mb-8">
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    Write your review
+                                </label>
+                                <textarea
+                                    value={reviewText}
+                                    onChange={(e) => setReviewText(e.target.value)}
+                                    placeholder="Share your thoughts on the game..."
+                                    rows={6}
+                                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Rating Categories */}
+                                <div className="space-y-6">
+                                    {/* Graphics Rating */}
+                                    <div>
+                                        <label className="block text-white font-medium mb-3">Graphics</label>
+                                        <StarRating 
+                                            rating={graphicsRating}
+                                            onRatingChange={setGraphicsRating}
+                                            size={24}
+                                        />
+                                    </div>
+
+                                    {/* Sound Rating */}
+                                    <div>
+                                        <label className="block text-white font-medium mb-3">Sound</label>
+                                        <StarRating 
+                                            rating={soundRating}
+                                            onRatingChange={setSoundRating}
+                                            size={24}
+                                        />
+                                    </div>
+
+                                    {/* Gameplay Rating */}
+                                    <div>
+                                        <label className="block text-white font-medium mb-3">Gameplay</label>
+                                        <StarRating 
+                                            rating={gameplayRating}
+                                            onRatingChange={setGameplayRating}
+                                            size={24}
+                                        />
+                                    </div>
+
+                                    {/* Replayability Rating */}
+                                    <div>
+                                        <label className="block text-white font-medium mb-3">Replayability</label>
+                                        <StarRating 
+                                            rating={replayabilityRating}
+                                            onRatingChange={setReplayabilityRating}
+                                            size={24}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Overall Score Display */}
+                                <div className="flex items-center justify-center">
+                                    <div className="text-center">
+                                        <h4 className="text-white font-semibold mb-4">Overall Score</h4>
+                                        <div className="relative w-32 h-32 mx-auto">
+                                            <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                                                {/* Background circle */}
+                                                <circle
+                                                    cx="60"
+                                                    cy="60"
+                                                    r="50"
+                                                    fill="transparent"
+                                                    stroke="rgb(71 85 105)" // slate-600
+                                                    strokeWidth="8"
+                                                />
+                                                {/* Progress circle */}
+                                                <circle
+                                                    cx="60"
+                                                    cy="60"
+                                                    r="50"
+                                                    fill="transparent"
+                                                    stroke="rgb(34 211 238)" // cyan-400
+                                                    strokeWidth="8"
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={`${(graphicsRating + soundRating + gameplayRating + replayabilityRating) / 4 * 20 * 314 / 100} 314`}
+                                                    className="transition-all duration-500"
+                                                />
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-3xl font-bold text-white">
+                                                    {Math.round((graphicsRating + soundRating + gameplayRating + replayabilityRating) / 4 * 20)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <p className="text-gray-400 text-sm mt-2">out of 100</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Save Section */}
+                            <div className="mt-8 pt-6 border-t border-slate-700">
+                                {/* Success/Error Messages */}
+                                {(reviewSaveError || reviewSaveSuccess) && (
+                                    <div className={`mb-4 p-4 rounded-lg ${
+                                        reviewSaveError
+                                            ? 'bg-red-900/20 border border-red-500'
+                                            : 'bg-green-900/20 border border-green-500'
+                                    }`}>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-${reviewSaveError ? 'red' : 'green'}-400`}>
+                                                {reviewSaveError ? '❌' : '✅'}
+                                            </span>
+                                            <div>
+                                                <p className={`text-${reviewSaveError ? 'red' : 'green'}-400 font-medium`}>
+                                                    {reviewSaveError ? 'Failed to save review' : 'Review saved successfully!'}
+                                                </p>
+                                                {reviewSaveError && (
+                                                    <p className="text-red-300 text-sm mt-1">{reviewSaveError}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Save Button */}
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={handleSaveReview}
+                                        disabled={
+                                            reviewSaveLoading ||
+                                            !reviewTitle.trim() ||
+                                            !reviewText.trim() ||
+                                            graphicsRating === 0 ||
+                                            soundRating === 0 ||
+                                            gameplayRating === 0 ||
+                                            replayabilityRating === 0
+                                        }
+                                        className="flex items-center gap-2 px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cyan-600"
+                                    >
+                                        {reviewSaveLoading ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                                <span>Saving...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save size={16} />
+                                                <span>Save Review</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                                 </div>
                             )}
                         </div>

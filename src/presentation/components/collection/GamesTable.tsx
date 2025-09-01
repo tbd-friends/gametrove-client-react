@@ -31,11 +31,12 @@ export const GamesTable: React.FC<GamesTableProps> = ({
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Platform</th>
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
+              <th className="text-left text-gray-400 text-sm font-medium pb-3">Rating</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colSpan={4} className="py-12 text-center">
+              <td colSpan={5} className="py-12 text-center">
                 <div className="text-gray-400">
                   <Gamepad2 className="mx-auto mb-3 opacity-50" size={48} />
                   <p className="text-lg mb-2">No games found</p>
@@ -65,6 +66,7 @@ export const GamesTable: React.FC<GamesTableProps> = ({
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Platform</th>
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
+            <th className="text-left text-gray-400 text-sm font-medium pb-3">Rating</th>
           </tr>
         </thead>
         <tbody>
@@ -113,6 +115,20 @@ export const GamesTable: React.FC<GamesTableProps> = ({
                 <span className="bg-green-600 text-white px-2 py-1 rounded-md text-xs font-medium">
                   {game.copyCount}
                 </span>
+              </td>
+              <td className="py-3 text-gray-300">
+                {game.overallRating !== null && game.overallRating !== undefined ? (
+                  <span className={`text-3xl font-bold ${
+                    game.overallRating < 35 ? 'text-red-400' :
+                    game.overallRating < 55 ? 'text-yellow-400' :
+                    game.overallRating < 75 ? 'text-blue-400' :
+                    'text-green-400'
+                  }`}>
+                    {game.overallRating}
+                  </span>
+                ) : (
+                  <span className="text-gray-500">—</span>
+                )}
               </td>
             </tr>
           ))}

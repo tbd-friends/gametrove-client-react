@@ -44,6 +44,30 @@ export interface AssociatePricingRequest {
     priceChartingId: string;
 }
 
+export interface SaveReviewRequest {
+    title: string;
+    content: string;
+    graphicsRating: number;
+    soundRating: number;
+    gameplayRating: number;
+    replayabilityRating: number;
+    isCompleted: boolean;
+    overallRating: number;
+}
+
+export interface GameReview {
+    title: string;
+    content: string;
+    graphicsRating: number;
+    soundRating: number;
+    gameplayRating: number;
+    replayabilityRating: number;
+    isCompleted: boolean;
+    overallRating: number;
+    createdDate?: string;
+    updatedDate?: string;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
@@ -62,6 +86,10 @@ export interface GameApiService {
     createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void>;
 
     associateCopyPricing(copyId: string, request: AssociatePricingRequest): Promise<void>;
+
+    saveGameReview(gameId: string, request: SaveReviewRequest): Promise<void>;
+
+    getGameReview(gameId: string): Promise<GameReview | null>;
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
@@ -424,6 +452,60 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                     throw error;
                 }
                 throw new Error('An unexpected error occurred while associating pricing.');
+            }
+        },
+
+        async saveGameReview(gameId: string, request: SaveReviewRequest): Promise<void> {
+            try {
+                console.log(`📝 Saving review for game ID: ${gameId}`, request);
+
+                await makeAuthenticatedRequest<void>(
+                    `${gamesEndpoint}/${gameId}/review`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(request),
+                    }
+                );
+
+                console.log('✅ Game review saved successfully');
+            } catch (error) {
+                if (error instanceof Error) {
+                    if (error.name === 'AbortError') {
+                        throw new Error('Request timeout. Please try again.');
+                    }
+                    throw error;
+                }
+                console.error('❌ Failed to save game review:', error);
+                throw new Error('An unexpected error occurred while saving the review.');
+            }
+        },
+
+        async getGameReview(gameId: string): Promise<GameReview | null> {
+            try {
+                console.log(`📖 Fetching review for game ID: ${gameId}`);
+
+                const response = await makeAuthenticatedRequest<GameReview>(
+                    `${gamesEndpoint}/${gameId}/review`
+                );
+
+                console.log('✅ Game review fetched successfully');
+                return response;
+            } catch (error) {
+                if (error instanceof Error) {
+                    if (error.message.includes('404')) {
+                        console.log('ℹ️ No review found for this game');
+                        return null;
+                    }
+                    if (error.name === 'AbortError') {
+                        throw new Error('Request timeout. Please try again.');
+                    }
+                    throw error;
+                }
+                console.error('❌ Failed to fetch game review:', error);
+                throw new Error('An unexpected error occurred while fetching the review.');
             }
         }
     };
@@ -842,6 +924,42 @@ export function createGameApiServiceWithConfig(
                 }
                 console.error('❌ Failed to associate copy pricing:', error);
                 throw new Error('An unexpected error occurred while associating pricing.');
+            }
+        },
+
+        async saveGameReview(gameId: string, request: SaveReviewRequest): Promise<void> {
+            try {
+                console.log(`📝 Saving review for game ID: ${gameId}`, request);
+
+                const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await authService.getAccessToken()}`,
+                    },
+                    body: JSON.stringify(request),
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Authentication failed. Please log in again.');
+                    }
+                    if (response.status === 403) {
+                        throw new Error('Access forbidden. You do not have permission to save reviews.');
+                    }
+                    throw new Error(`Failed to save review: ${response.status} ${response.statusText}`);
+                }
+
+                console.log('✅ Game review saved successfully');
+            } catch (error) {
+                if (error instanceof Error) {
+                    if (error.name === 'AbortError') {
+                        throw new Error('Request timeout. Please try again.');
+                    }
+                    throw error;
+                }
+                console.error('❌ Failed to save game review:', error);
+                throw new Error('An unexpected error occurred while saving the review.');
             }
         }
     };
