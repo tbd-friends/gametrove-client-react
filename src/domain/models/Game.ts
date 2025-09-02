@@ -2,6 +2,15 @@ import type {GameCopy} from './GameCopy';
 import type {Platform} from './Platform';
 import type {Publisher} from './Publisher';
 
+
+/**
+ * User's review for a game (simplified version for Game model)
+ */
+export interface GameReviewSummary {
+    overallRating: number;
+    title: string;
+}
+
 /**
  * Represents a game with its associated data
  * Based on the API response structure from temp_games_request.json
@@ -36,6 +45,12 @@ export interface Game {
 
     /** Overall rating score out of 100 */
     overallRating?: number | null;
+
+    /** User's review summary (when hasReview is true) */
+    review?: GameReviewSummary;
+
+    /** Age ratings for the game (array of strings like "PEGI 12", "ESRB T") */
+    ageRatings?: string[];
 }
 
 /**

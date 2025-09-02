@@ -561,7 +561,21 @@ export const GameDetail: React.FC = () => {
     };
 
     return (
-        <div className="w-full">
+        <div className="w-full relative">
+            {/* IGDB Linked Button - Top Right */}
+            {game?.igdbGameId && (
+                <div className="absolute top-4 right-4 z-10">
+                    <button
+                        onClick={handleLinkToIgdb}
+                        className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-600 hover:border-slate-500 transition-colors text-sm"
+                        title="Relink to IGDB"
+                    >
+                        <Link size={14}/>
+                        <span className="hidden sm:inline">IGDB Linked</span>
+                    </button>
+                </div>
+            )}
+
             {/* Breadcrumb Navigation */}
             <Breadcrumb items={breadcrumbItems}/>
 
