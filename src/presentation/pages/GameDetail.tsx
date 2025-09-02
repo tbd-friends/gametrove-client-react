@@ -1662,7 +1662,10 @@ export const GameDetail: React.FC = () => {
                                             <div
                                                 key={similarGame.identifier}
                                                 className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:bg-slate-700 transition-colors cursor-pointer group"
-                                                onClick={() => navigate(`/collection/game/${similarGame.identifier}`)}
+                                                onClick={() => {
+                                                    setActiveTab('details');
+                                                    navigate(`/collection/game/${similarGame.identifier}`);
+                                                }}
                                             >
                                                 <div className="text-center">
                                                     {/* Game Icon/Cover */}
