@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Gamepad2 } from 'lucide-react';
 import type { Game } from '../../../domain/models';
 import { consoleNameToSlug } from '../../utils/slugUtils';
+import { PriceChangeIndicator } from '../common';
 
 interface Console {
   name: string;
@@ -32,11 +33,12 @@ export const GamesTable: React.FC<GamesTableProps> = ({
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
               <th className="text-left text-gray-400 text-sm font-medium pb-3">Rating</th>
+              <th className="text-left text-gray-400 text-sm font-medium pb-3">Price Trends</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colSpan={5} className="py-12 text-center">
+              <td colSpan={6} className="py-12 text-center">
                 <div className="text-gray-400">
                   <Gamepad2 className="mx-auto mb-3 opacity-50" size={48} />
                   <p className="text-lg mb-2">No games found</p>
@@ -67,6 +69,7 @@ export const GamesTable: React.FC<GamesTableProps> = ({
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Publisher</th>
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Copies</th>
             <th className="text-left text-gray-400 text-sm font-medium pb-3">Rating</th>
+            <th className="text-left text-gray-400 text-sm font-medium pb-3">Price Trends</th>
           </tr>
         </thead>
         <tbody>
@@ -128,6 +131,13 @@ export const GamesTable: React.FC<GamesTableProps> = ({
                   </span>
                 ) : (
                   <span className="text-gray-500">—</span>
+                )}
+              </td>
+              <td className="py-3">
+                {game.averages ? (
+                  <PriceChangeIndicator averages={game.averages} />
+                ) : (
+                  <span className="text-gray-500 text-sm">—</span>
                 )}
               </td>
             </tr>

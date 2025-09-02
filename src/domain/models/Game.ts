@@ -12,6 +12,15 @@ export interface GameReviewSummary {
 }
 
 /**
+ * Price change averages for a game
+ */
+export interface GameAverages {
+    completeInBoxDifference: number;
+    looseDifference: number;
+    newDifference: number;
+}
+
+/**
  * Represents a game with its associated data
  * Based on the API response structure from temp_games_request.json
  */
@@ -51,6 +60,9 @@ export interface Game {
 
     /** Age ratings for the game (array of strings like "PEGI 12", "ESRB T") */
     ageRatings?: string[];
+
+    /** Price change averages for the game */
+    averages?: GameAverages;
 }
 
 /**
