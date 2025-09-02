@@ -3,7 +3,7 @@ import { AlertCircle, Search, List, Grid3X3, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { consoleNameToSlug } from "../utils/slugUtils";
-import { usePagination, useGamesData, useBarcodeScanner, usePriceCharting } from "../hooks";
+import { usePagination, useGamesData, useBarcodeScanner, usePriceCharting, useDebounce } from "../hooks";
 import { createPriceChartingApiService } from "../../infrastructure/api";
 import { useAuthService } from "../hooks/useAuthService";
 import {
@@ -28,6 +28,8 @@ export const MyCollection: React.FC = () => {
     const [searchValue, setSearchValue] = useState(() => {
         return localStorage.getItem(COLLECTION_SEARCH_KEY) || '';
     });
+    // Debounce the search value to prevent API calls on every keystroke
+    const debouncedSearchValue = useDebounce(searchValue, 300);
     const [isScanning, setIsScanning] = useState(false);
     const [isProgrammaticUpdate, setIsProgrammaticUpdate] = useState(false);
     const [isSearchFieldFocused, setIsSearchFieldFocused] = useState(false);
@@ -126,7 +128,7 @@ export const MyCollection: React.FC = () => {
         currentPage: pagination.currentPage,
         pageSize: pagination.pageSize,
         hasSelectedConsole: Boolean(consoleName),
-        searchTerm: searchValue
+        searchTerm: debouncedSearchValue
     });
 
     // Track the last barcode search to check if we need to search PriceCharting
@@ -196,9 +198,9 @@ export const MyCollection: React.FC = () => {
             filtered = filtered.filter(game => game.platform.description === selectedConsole.name);
         }
 
-        console.log('🔍 Final filtered games:', filtered.length, 'Search handled by API:', !!searchValue);
+        console.log('🔍 Final filtered games:', filtered.length, 'Search handled by API:', !!debouncedSearchValue);
         return filtered;
-    }, [games, selectedConsole, searchValue]);
+    }, [games, selectedConsole, debouncedSearchValue]);
 
     // Check if we need to search PriceCharting after games are loaded
     React.useEffect(() => {
@@ -208,13 +210,13 @@ export const MyCollection: React.FC = () => {
             !paginationLoading && 
             filteredGames.length === 0 && 
             isPriceChartingEnabled && 
-            searchValue === lastBarcodeSearch) {
+            debouncedSearchValue === lastBarcodeSearch) {
             
             console.log('🔍 Barcode search completed with no results, checking PriceCharting');
             searchPriceChartingForBarcode(lastBarcodeSearch);
             setLastBarcodeSearch(null); // Clear to prevent repeated searches
         }
-    }, [lastBarcodeSearch, loading, paginationLoading, filteredGames.length, isPriceChartingEnabled, searchValue, searchPriceChartingForBarcode]);
+    }, [lastBarcodeSearch, loading, paginationLoading, filteredGames.length, isPriceChartingEnabled, debouncedSearchValue, searchPriceChartingForBarcode]);
 
     // Set view mode based on console selection and screen size
     useEffect(() => {
@@ -246,7 +248,7 @@ export const MyCollection: React.FC = () => {
     // Reset pagination when switching views or search changes
     useEffect(() => {
         pagination.resetToFirstPage();
-    }, [viewMode, searchValue, pagination.resetToFirstPage]);
+    }, [viewMode, debouncedSearchValue, pagination.resetToFirstPage]);
 
     // Listen for window resize to adjust view mode
     useEffect(() => {

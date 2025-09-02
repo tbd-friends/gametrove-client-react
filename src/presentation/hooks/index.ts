@@ -7,6 +7,7 @@ export { useIgdbSearch } from './useIgdbSearch';
 export { useIgdbPlatforms } from './useIgdbPlatforms';
 export { usePriceCharting } from './usePriceCharting';
 export { useBarcodeScanner } from './useBarcodeScanner';
+export { useDebounce } from './useDebounce';
 export type { UsePaginationProps, UsePaginationReturn } from './usePagination';
 export type { UseGamesDataProps, UseGamesDataReturn } from './useGamesData';
 export type { UseStatsReturn } from './useStats';
