@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {ArrowLeft, Star, Edit, Edit3, Trash2, AlertCircle, Link, Plus, ChevronDown, X, Search, CheckCircle, Save} from "lucide-react";
+import {ArrowLeft, Edit3, AlertCircle, Link, Plus, ChevronDown, X, Search, CheckCircle, Save} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from '@headlessui/react';
 import {Breadcrumb, StarRating} from "../components/common";
@@ -15,7 +15,7 @@ import {
     createConditionApiService,
     createPriceChartingApiService
 } from "../../infrastructure/api";
-import type {IgdbGameDetails, Condition, CreateCopyRequest, PriceChartingHistoryData, SaveReviewRequest, GameReview} from "../../infrastructure/api";
+import type {IgdbGameDetails, Condition, CreateCopyRequest, PriceChartingHistoryData, SaveReviewRequest, GameReview, SimilarGame} from "../../infrastructure/api";
 import {useAuthService} from "../hooks/useAuthService";
 import {usePriceCharting} from "../hooks";
 import type {Game, Platform, Publisher} from "../../domain/models";
@@ -24,7 +24,7 @@ import {mapApiConditionToGameCondition} from "../../domain/models";
 export const GameDetail: React.FC = () => {
     const navigate = useNavigate();
     const {gameId, consoleName} = useParams<{ gameId: string; consoleName?: string }>();
-    const [activeTab, setActiveTab] = useState<'details' | 'copies' | 'pricecharting' | 'myreview'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'copies' | 'pricecharting' | 'myreview' | 'morelikethis'>('details');
     const [game, setGame] = useState<Game | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -85,6 +85,12 @@ export const GameDetail: React.FC = () => {
     const [existingReview, setExistingReview] = useState<GameReview | null>(null);
     const [reviewLoadLoading, setReviewLoadLoading] = useState(false);
     const [reviewLoadError, setReviewLoadError] = useState<string | null>(null);
+
+    // More Like This state
+    const [moreLikeThisGames, setMoreLikeThisGames] = useState<SimilarGame[]>([]);
+    const [moreLikeThisLoading, setMoreLikeThisLoading] = useState(false);
+    const [moreLikeThisError, setMoreLikeThisError] = useState<string | null>(null);
+    const [showMoreLikeThisTab, setShowMoreLikeThisTab] = useState(false);
 
     const authService = useAuthService();
     const {isEnabled: isPriceChartingEnabled} = usePriceCharting();
@@ -236,6 +242,42 @@ export const GameDetail: React.FC = () => {
 
         loadExistingReview();
     }, [activeTab, gameId, game?.hasReview, authService.isAuthenticated, authService]);
+
+    // Load more-like-this games when game is loaded
+    useEffect(() => {
+        async function loadMoreLikeThisGames() {
+            if (!gameId || !authService.isAuthenticated || authService.isLoading) {
+                return;
+            }
+
+            try {
+                setMoreLikeThisLoading(true);
+                setMoreLikeThisError(null);
+
+                const gameApiService = createGameApiService(authService);
+                const similarGames = await gameApiService.getMoreLikeThis(gameId);
+
+                if (similarGames && similarGames.length > 0) {
+                    setMoreLikeThisGames(similarGames);
+                    setShowMoreLikeThisTab(true);
+                    console.log('✅ Loaded similar games:', similarGames);
+                } else {
+                    setMoreLikeThisGames([]);
+                    setShowMoreLikeThisTab(false);
+                    console.log('ℹ️ No similar games found');
+                }
+            } catch (err) {
+                console.error('❌ Failed to load similar games:', err);
+                setMoreLikeThisError(err instanceof Error ? err.message : 'Failed to load similar games');
+                setMoreLikeThisGames([]);
+                setShowMoreLikeThisTab(false);
+            } finally {
+                setMoreLikeThisLoading(false);
+            }
+        }
+
+        loadMoreLikeThisGames();
+    }, [gameId, authService.isAuthenticated, authService]);
 
     // Close condition dropdown when clicking outside
     useEffect(() => {
@@ -397,17 +439,6 @@ export const GameDetail: React.FC = () => {
         setIsPriceChartingSearchOpen(true);
     };
 
-    const handleRemoveFromCollection = () => {
-        // Show confirmation dialog and remove game
-        if (window.confirm(`Are you sure you want to remove "${displayData?.title}" from your collection?`)) {
-            console.log("Remove game:", displayData?.id);
-            if (consoleName) {
-                navigate(`/collection/console/${consoleName}`);
-            } else {
-                navigate('/collection');
-            }
-        }
-    };
 
     const handleLinkToIgdb = () => {
         if (gameId && game) {
@@ -817,6 +848,18 @@ export const GameDetail: React.FC = () => {
                             >
                                 My Review
                             </button>
+                            {showMoreLikeThisTab && (
+                                <button
+                                    onClick={() => setActiveTab('morelikethis')}
+                                    className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                                        activeTab === 'morelikethis'
+                                            ? 'text-cyan-400 border-cyan-400'
+                                            : 'text-gray-400 border-transparent hover:text-gray-300'
+                                    }`}
+                                >
+                                    More Like This ({moreLikeThisGames.length})
+                                </button>
+                            )}
                         </nav>
                     </div>
 
@@ -1584,6 +1627,75 @@ export const GameDetail: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'morelikethis' && showMoreLikeThisTab && (
+                        <div className="mb-8">
+                            {/* Loading State */}
+                            {moreLikeThisLoading && (
+                                <div className="flex justify-center items-center py-12">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+                                    <span className="ml-3 text-gray-400">Loading similar games...</span>
+                                </div>
+                            )}
+
+                            {/* Error State */}
+                            {moreLikeThisError && !moreLikeThisLoading && (
+                                <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6 flex items-center gap-3">
+                                    <AlertCircle className="text-red-400 flex-shrink-0" size={20}/>
+                                    <div>
+                                        <h3 className="text-red-400 font-medium">Failed to load similar games</h3>
+                                        <p className="text-gray-300 text-sm mt-1">{moreLikeThisError}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Games Grid */}
+                            {!moreLikeThisLoading && !moreLikeThisError && moreLikeThisGames.length > 0 && (
+                                <div>
+                                    <h3 className="text-xl font-semibold text-white mb-6">Games Similar to {displayData?.title}</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                        {moreLikeThisGames.map((similarGame) => (
+                                            <div
+                                                key={similarGame.identifier}
+                                                className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:bg-slate-700 transition-colors cursor-pointer group"
+                                                onClick={() => navigate(`/collection/game/${similarGame.identifier}`)}
+                                            >
+                                                <div className="text-center">
+                                                    {/* Game Icon/Cover */}
+                                                    <div className="w-16 h-20 bg-slate-600 border border-slate-500 rounded flex items-center justify-center text-3xl mx-auto mb-3">
+                                                        🎮
+                                                    </div>
+                                                    
+                                                    {/* Game Info */}
+                                                    <div>
+                                                        <h4 className="text-white font-semibold text-sm group-hover:text-cyan-400 transition-colors mb-2 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                                            {similarGame.name}
+                                                        </h4>
+                                                        <p className="text-gray-400 text-xs">
+                                                            {similarGame.platform}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* No Games State */}
+                            {!moreLikeThisLoading && !moreLikeThisError && moreLikeThisGames.length === 0 && (
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+                                    <div className="text-center">
+                                        <div className="text-gray-400 text-4xl mb-4">🎲</div>
+                                        <p className="text-gray-400 mb-2">No Similar Games Found</p>
+                                        <p className="text-gray-500 text-sm">
+                                            We couldn't find any games similar to this one in our database.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -68,12 +68,20 @@ export interface GameReview {
     updatedDate?: string;
 }
 
+export interface SimilarGame {
+    identifier: string;
+    name: string;
+    platform: string;
+}
+
 export interface GameApiService {
     getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult>;
 
     getGameById(id: string): Promise<Game | null>;
 
     searchGames(query: string): Promise<Game[]>;
+
+    getMoreLikeThis(gameId: string): Promise<SimilarGame[]>;
 
     checkGameExists(platformId: string, title: string): Promise<boolean>;
 
@@ -230,6 +238,34 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 throw new Error('Invalid response format from games search API');
             } catch (error) {
                 console.error(`Failed to search games with query "${query}":`, error);
+                throw error;
+            }
+        },
+
+        async getMoreLikeThis(gameId: string): Promise<SimilarGame[]> {
+            try {
+                console.log(`🎯 Fetching similar games for game ID: ${gameId}`);
+                
+                const response = await makeAuthenticatedRequest<ListResponse<SimilarGame>>(
+                    `${gamesEndpoint}/${gameId}/more-like-this`
+                );
+
+                if ('success' in response && response.success) {
+                    return response.data;
+                }
+
+                // If response is directly an array
+                if (Array.isArray(response)) {
+                    return response as SimilarGame[];
+                }
+
+                throw new Error('Invalid response format from more-like-this API');
+            } catch (error) {
+                if (error instanceof Error && error.message.includes('404')) {
+                    console.log(`ℹ️ No similar games found for game ID: ${gameId}`);
+                    return [];
+                }
+                console.error(`Failed to fetch similar games for game ID ${gameId}:`, error);
                 throw error;
             }
         },
@@ -677,6 +713,34 @@ export function createGameApiServiceWithConfig(
                 throw new Error('Invalid response format from games search API');
             } catch (error) {
                 console.error(`Failed to search games with query "${query}":`, error);
+                throw error;
+            }
+        },
+
+        async getMoreLikeThis(gameId: string): Promise<SimilarGame[]> {
+            try {
+                console.log(`🎯 Fetching similar games for game ID: ${gameId}`);
+                
+                const response = await makeAuthenticatedRequest<ListResponse<SimilarGame>>(
+                    `${gamesEndpoint}/${gameId}/more-like-this`
+                );
+
+                if ('success' in response && response.success) {
+                    return response.data;
+                }
+
+                // If response is directly an array
+                if (Array.isArray(response)) {
+                    return response as SimilarGame[];
+                }
+
+                throw new Error('Invalid response format from more-like-this API');
+            } catch (error) {
+                if (error instanceof Error && error.message.includes('Resource not found')) {
+                    console.log(`ℹ️ No similar games found for game ID: ${gameId}`);
+                    return [];
+                }
+                console.error(`Failed to fetch similar games for game ID ${gameId}:`, error);
                 throw error;
             }
         },
