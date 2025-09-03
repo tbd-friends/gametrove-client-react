@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, Search, List, Grid3X3, Plus } from "lucide-react";
+import { AlertCircle, Search, List, Grid3X3, Plus, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/common";
 import { consoleNameToSlug } from "../utils/slugUtils";
@@ -323,11 +323,20 @@ export const MyCollection: React.FC = () => {
                                 console.log('🔍 Search field blurred - enabling barcode scanner');
                                 setIsSearchFieldFocused(false);
                             }}
-                            className="w-full sm:w-80 pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg
+                            className="w-full sm:w-80 pl-10 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-lg
                                    text-white placeholder-gray-400 focus:outline-none focus:ring-2 
                                    focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200"
                             aria-label="Search game collection"
                         />
+                        {searchValue && (
+                            <button
+                                onClick={() => setSearchValue('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
 
                     {/* View Mode Toggle - Only show when not viewing specific console */}
