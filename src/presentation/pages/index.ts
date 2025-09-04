@@ -5,3 +5,4 @@ export * from './AddGame.tsx';
 export * from './Settings.tsx';
 export * from './GameDetail.tsx';
 export * from './LinkGameToIgdb.tsx';
+export { default as LandingPage } from './LandingPage.tsx';
