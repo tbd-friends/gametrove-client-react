@@ -189,11 +189,34 @@ export function createPriceChartingApiService(authService: IAuthenticationServic
             try {
                 console.log(`🔄 Triggering pricing update`);
 
-                const url = `/api/pricecharting/update`;
-                await makeAuthenticatedRequest<void>(url, { method: 'POST' }, pricingUpdateTimeout);
+                const token = await authService.getAccessToken();
+                
+                // Create AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), pricingUpdateTimeout);
+
+                const response = await fetch(`${baseUrl}/api/pricecharting/update`, {
+                    method: 'POST',
+                    signal: controller.signal,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Resource not found');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
                 console.log(`✅ Pricing update triggered successfully`);
             } catch (error) {
+                if (error instanceof Error && error.name === 'AbortError') {
+                    throw new Error(`Request timed out after ${pricingUpdateTimeout / 1000} seconds`);
+                }
                 console.error('Failed to trigger pricing update:', error);
                 throw error;
             }
