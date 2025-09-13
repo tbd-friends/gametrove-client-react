@@ -1,5 +1,6 @@
 import type { Publisher } from '../../domain/models';
 import type { IAuthenticationService } from '../../domain/interfaces/IAuthenticationService';
+import { logger } from '../../shared/utils/logger';
 
 /**
  * Publisher API service for managing publisher data
@@ -36,7 +37,7 @@ export function createPublisherApiService(authService: IAuthenticationService): 
 
             return await response.json();
         } catch (error) {
-            console.error('API request failed:', error);
+            logger.error('API request failed', error, 'API');
             throw error;
         }
     }
@@ -44,17 +45,17 @@ export function createPublisherApiService(authService: IAuthenticationService): 
     return {
         async getAllPublishers(): Promise<Publisher[]> {
             try {
-                console.log('🏢 Fetching all publishers from API');
+                logger.info('Fetching all publishers from API', undefined, 'API');
                 const publishers = await makeAuthenticatedRequest<Publisher[]>(publishersEndpoint);
                 
                 if (Array.isArray(publishers)) {
-                    console.log(`✅ Loaded ${publishers.length} publishers`);
+                    logger.info(`Loaded ${publishers.length} publishers`, undefined, 'API');
                     return publishers;
                 }
                 
                 throw new Error('Invalid response format from publishers API');
             } catch (error) {
-                console.error('Failed to fetch publishers:', error);
+                logger.error('Failed to fetch publishers', error, 'API');
                 throw error;
             }
         }

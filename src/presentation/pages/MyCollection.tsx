@@ -6,6 +6,7 @@ import { consoleNameToSlug } from "../utils/slugUtils";
 import { usePagination, useGamesData, useBarcodeScanner, usePriceCharting, useDebounce } from "../hooks";
 import { createPriceChartingApiService } from "../../infrastructure/api";
 import { useAuthService } from "../hooks/useAuthService";
+import { logger } from "../../shared/utils/logger";
 import {
   GamesTable,
   ConsolesGrid,
@@ -46,7 +47,7 @@ export const MyCollection: React.FC = () => {
 
     // Barcode scanner integration
     const handleBarcodeScanned = React.useCallback(async (barcode: string) => {
-        console.log('🔍 Complete barcode scanned, setting search value:', barcode);
+        logger.info('Complete barcode scanned, setting search value', { barcode }, 'USER');
         setIsProgrammaticUpdate(true);
         setSearchValue(barcode);
         setLastBarcodeSearch(barcode); // Track this as a barcode search
@@ -57,14 +58,14 @@ export const MyCollection: React.FC = () => {
     // Function to search PriceCharting when barcode not found in collection
     const searchPriceChartingForBarcode = React.useCallback(async (barcode: string) => {
         try {
-            console.log('🔍 No games found in collection, searching PriceCharting for UPC:', barcode);
+            logger.info('No games found in collection, searching PriceCharting for UPC', { barcode }, 'API');
             
             const priceChartingApiService = createPriceChartingApiService(authService);
             const results = await priceChartingApiService.searchPricing({ upc: barcode });
             
             if (results.length > 0) {
                 const firstResult = results[0];
-                console.log('✅ Found PriceCharting match:', firstResult);
+                logger.info('Found PriceCharting match', firstResult, 'API');
                 
                 // Navigate to Add Game with pre-populated data
                 navigate('/add-game', {
@@ -83,11 +84,11 @@ export const MyCollection: React.FC = () => {
                     }
                 });
             } else {
-                console.log('❌ No PriceCharting matches found for UPC:', barcode);
+                logger.info('No PriceCharting matches found for UPC', { barcode }, 'API');
                 // Could show a notification here that no matches were found
             }
         } catch (error) {
-            console.error('❌ Failed to search PriceCharting:', error);
+            logger.error('Failed to search PriceCharting', error, 'API');
             // Could show error notification here
         }
     }, [authService, navigate]);
@@ -95,7 +96,7 @@ export const MyCollection: React.FC = () => {
     const { clearBuffer } = useBarcodeScanner({
         onBarcodeScanned: handleBarcodeScanned,
         onScanningStarted: () => {
-            console.log('📱 Barcode scanning started - clearing search field');
+            logger.info('Barcode scanning started - clearing search field', undefined, 'USER');
             setIsProgrammaticUpdate(true);
             setSearchValue(''); // Clear existing search when new scan starts
             setIsScanning(true);
@@ -103,7 +104,7 @@ export const MyCollection: React.FC = () => {
             setTimeout(() => setIsProgrammaticUpdate(false), 100);
         },
         onScanningEnded: () => {
-            console.log('📱 Barcode scanning ended');
+            logger.info('Barcode scanning ended', undefined, 'USER');
             setIsScanning(false);
         },
         enabled: !isProgrammaticUpdate && !isSearchFieldFocused, // Disable scanner during programmatic updates or when typing
@@ -194,11 +195,11 @@ export const MyCollection: React.FC = () => {
 
         // Only filter by selected console - search is handled by the API
         if (selectedConsole) {
-            console.log('🏮 Filtering by selected console:', selectedConsole.name);
+            logger.info('Filtering by selected console', { consoleName: selectedConsole.name }, 'USER');
             filtered = filtered.filter(game => game.platform.description === selectedConsole.name);
         }
 
-        console.log('🔍 Final filtered games:', filtered.length, 'Search handled by API:', !!debouncedSearchValue);
+        logger.debug('Final filtered games', { filteredCount: filtered.length, searchHandledByAPI: !!debouncedSearchValue }, 'USER');
         return filtered;
     }, [games, selectedConsole, debouncedSearchValue]);
 
@@ -212,7 +213,7 @@ export const MyCollection: React.FC = () => {
             isPriceChartingEnabled && 
             debouncedSearchValue === lastBarcodeSearch) {
             
-            console.log('🔍 Barcode search completed with no results, checking PriceCharting');
+            logger.info('Barcode search completed with no results, checking PriceCharting', undefined, 'USER');
             searchPriceChartingForBarcode(lastBarcodeSearch);
             setLastBarcodeSearch(null); // Clear to prevent repeated searches
         }
@@ -316,11 +317,11 @@ export const MyCollection: React.FC = () => {
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
                             onFocus={() => {
-                                console.log('🔍 Search field focused - disabling barcode scanner');
+                                logger.info('Search field focused - disabling barcode scanner', undefined, 'USER');
                                 setIsSearchFieldFocused(true);
                             }}
                             onBlur={() => {
-                                console.log('🔍 Search field blurred - enabling barcode scanner');
+                                logger.info('Search field blurred - enabling barcode scanner', undefined, 'USER');
                                 setIsSearchFieldFocused(false);
                             }}
                             className="w-full sm:w-80 pl-10 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-lg

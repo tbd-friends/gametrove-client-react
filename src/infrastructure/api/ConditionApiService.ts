@@ -1,4 +1,5 @@
 import type {IAuthenticationService} from '../../domain/interfaces/IAuthenticationService';
+import { logger } from '../../shared/utils/logger';
 
 /**
  * Condition data structure from API
@@ -43,7 +44,7 @@ export function createConditionApiService(authService: IAuthenticationService): 
 
             return await response.json();
         } catch (error) {
-            console.error('API request failed:', error);
+            logger.error('API request failed', error, 'API');
 
             throw error;
         }
@@ -51,11 +52,11 @@ export function createConditionApiService(authService: IAuthenticationService): 
 
     return {
         async getAllConditions(): Promise<Condition[]> {
-            console.log('📦 Fetching all conditions from API');
+            logger.info('Fetching all conditions from API', undefined, 'API');
             const conditions = await makeAuthenticatedRequest<Condition[]>(conditionsEndpoint);
 
             if (Array.isArray(conditions)) {
-                console.log(`✅ Loaded ${conditions.length} conditions`);
+                logger.info(`Loaded ${conditions.length} conditions`, undefined, 'API');
 
                 return conditions;
             }

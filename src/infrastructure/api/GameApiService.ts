@@ -1,6 +1,10 @@
 import type {Game, PaginatedResponse} from '../../domain/models';
 import type {ApiResponse, ListResponse} from '../../domain/models';
 import type {IAuthenticationService} from '../../domain/interfaces/IAuthenticationService';
+import {environment} from '../../shared/config/environment';
+import {ApiError, ErrorCategory} from '../../shared/errors/ApiError';
+import {logger} from '../../shared/utils/logger';
+import {createAuthenticatedRequestHandler} from '../../shared/utils/apiRequest';
 
 export interface PaginationParams {
     page: number;
@@ -79,6 +83,8 @@ export interface GameApiService {
 
     getGameById(id: string): Promise<Game | null>;
 
+    getRecentGames(): Promise<Game[]>;
+
     searchGames(query: string): Promise<Game[]>;
 
     getMoreLikeThis(gameId: string): Promise<SimilarGame[]>;
@@ -101,53 +107,14 @@ export interface GameApiService {
 }
 
 export function createGameApiService(authService: IAuthenticationService): GameApiService {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7054';
-    console.log('🏠 API Base URL:', baseUrl);
-    console.log('🔧 VITE_API_BASE_URL env var:', import.meta.env.VITE_API_BASE_URL);
+    const baseUrl = environment.apiBaseUrl;
     const gamesEndpoint = '/api/games';
 
-    async function makeAuthenticatedRequest<T>(
-        url: string,
-        options: RequestInit = {}
-    ): Promise<T> {
-        try {
-            const token = await authService.getAccessToken();
+    const makeAuthenticatedRequest = createAuthenticatedRequestHandler(authService);
 
-            const headers: Record<string, string> = {
-                'Authorization': `Bearer ${token}`,
-                ...(options.headers as Record<string, string> || {}),
-            };
-
-            // Only set Content-Type for requests with a body (POST, PUT, PATCH)
-            const method = options.method || 'GET';
-            if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) && options.body) {
-                headers['Content-Type'] = 'application/json';
-            }
-
-            const response = await fetch(`${baseUrl}${url}`, {
-                ...options,
-                headers,
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Authentication failed. Please log in again.');
-                }
-                if (response.status === 403) {
-                    throw new Error('Access forbidden. You do not have permission to access this resource.');
-                }
-
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            if (error instanceof Error) {
-                throw error;
-            }
-            throw new Error('An unexpected error occurred while making the API request.');
-        }
-    }
+    // Helper to make requests with full URL
+    const makeRequest = <T>(url: string, options?: RequestInit) => 
+        makeAuthenticatedRequest<T>(`${baseUrl}${url}`, options);
 
     return {
         async getAllGames(pagination?: PaginationParams): Promise<Game[] | PaginatedGamesResult> {
@@ -167,7 +134,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                     url = `${gamesEndpoint}?${searchParams}`;
                 }
 
-                const response = await makeAuthenticatedRequest<PaginatedResponse<Game>>(url);
+                const response = await makeRequest<PaginatedResponse<Game>>(url);
 
                 // Handle empty results case
                 if (response.data && Array.isArray(response.data)) {
@@ -187,14 +154,14 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error('Invalid response format from games API');
             } catch (error) {
-                console.error('Failed to fetch games:', error);
+                logger.error('Failed to fetch games', error, 'API');
                 throw error;
             }
         },
 
         async getGameById(id: string): Promise<Game | null> {
             try {
-                const response = await makeAuthenticatedRequest<ApiResponse<Game>>(`${gamesEndpoint}/${id}`);
+                const response = await makeRequest<ApiResponse<Game>>(`${gamesEndpoint}/${id}`);
 
                 if ('success' in response && response.success) {
                     return response.data;
@@ -210,7 +177,27 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 if (error instanceof Error && error.message.includes('404')) {
                     return null;
                 }
-                console.error(`Failed to fetch game with ID ${id}:`, error);
+                logger.error(`Failed to fetch game with ID ${id}`, error, 'API');
+                throw error;
+            }
+        },
+
+        async getRecentGames(): Promise<Game[]> {
+            try {
+                const response = await makeRequest<ListResponse<Game>>(`${gamesEndpoint}/recent`);
+
+                if ('success' in response && response.success) {
+                    return response.data;
+                }
+
+                // If response is directly an array
+                if (Array.isArray(response)) {
+                    return response as Game[];
+                }
+
+                throw new Error('Invalid response format from recent games API');
+            } catch (error) {
+                logger.error('Failed to fetch recent games', error, 'API');
                 throw error;
             }
         },
@@ -222,7 +209,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
             try {
                 const searchParams = new URLSearchParams({q: query});
-                const response = await makeAuthenticatedRequest<ListResponse<Game>>(
+                const response = await makeRequest<ListResponse<Game>>(
                     `${gamesEndpoint}/search?${searchParams}`
                 );
 
@@ -237,16 +224,16 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error('Invalid response format from games search API');
             } catch (error) {
-                console.error(`Failed to search games with query "${query}":`, error);
+                logger.error(`Failed to search games with query "${query}"`, error, 'API');
                 throw error;
             }
         },
 
         async getMoreLikeThis(gameId: string): Promise<SimilarGame[]> {
             try {
-                console.log(`🎯 Fetching similar games for game ID: ${gameId}`);
+                logger.info(`Fetching similar games for game ID: ${gameId}`, undefined, 'API');
                 
-                const response = await makeAuthenticatedRequest<ListResponse<SimilarGame>>(
+                const response = await makeRequest<ListResponse<SimilarGame>>(
                     `${gamesEndpoint}/${gameId}/more-like-this`
                 );
 
@@ -262,10 +249,10 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 throw new Error('Invalid response format from more-like-this API');
             } catch (error) {
                 if (error instanceof Error && error.message.includes('404')) {
-                    console.log(`ℹ️ No similar games found for game ID: ${gameId}`);
+                    logger.info(`No similar games found for game ID: ${gameId}`, undefined, 'API');
                     return [];
                 }
-                console.error(`Failed to fetch similar games for game ID ${gameId}:`, error);
+                logger.error(`Failed to fetch similar games for game ID ${gameId}`, error, 'API');
                 throw error;
             }
         },
@@ -285,7 +272,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 // Return true if game exists (200), false if not found (404)
                 return response.status === 200;
             } catch (error) {
-                console.error('Error checking if game exists:', error);
+                logger.error('Error checking if game exists', error, 'API');
                 // If there's an error, assume game doesn't exist to allow proceeding
                 return false;
             }
@@ -293,7 +280,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
         async saveGame(request: SaveGameRequest): Promise<string> {
             try {
-                console.log('💾 Saving game to collection:', request);
+                logger.info('Saving game to collection', request, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}`, {
@@ -308,7 +295,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 if (response.ok) {
                     const rawGameId = await response.text();
                     const gameId = rawGameId.replace(/"/g, '').trim();
-                    console.log('✅ Game saved successfully. Game ID:', gameId);
+                    logger.info('Game saved successfully', { gameId }, 'API');
                     return gameId;
                 }
 
@@ -324,14 +311,14 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to save game:', error);
+                logger.error('Failed to save game', error, 'API');
                 throw error;
             }
         },
 
         async updateGame(gameId: string, request: UpdateGameRequest): Promise<void> {
             try {
-                console.log('📝 Updating game:', gameId, 'with data:', request);
+                logger.info('Updating game', { gameId, request }, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}`, {
@@ -344,7 +331,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 });
 
                 if (response.ok) {
-                    console.log('✅ Game updated successfully');
+                    logger.info('Game updated successfully', undefined, 'API');
                     return;
                 }
 
@@ -363,14 +350,14 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error(`Failed to update game: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to update game:', error);
+                logger.error('Failed to update game', error, 'API');
                 throw error;
             }
         },
 
         async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void> {
             try {
-                console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
+                logger.info('Linking game to IGDB', { gameId, igdbGameId: request.igdbGameId }, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/link`, {
@@ -385,7 +372,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 if (response.ok) {
                     const rawLinkedGameId = await response.text();
                     const linkedGameId = rawLinkedGameId.replace(/"/g, '').trim();
-                    console.log('✅ Game linked to IGDB successfully. Linked game ID:', linkedGameId);
+                    logger.info('Game linked to IGDB successfully', { linkedGameId }, 'API');
                     return;
                 }
 
@@ -401,14 +388,14 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to link game to IGDB:', error);
+                logger.error('Failed to link game to IGDB', error, 'API');
                 throw error;
             }
         },
 
         async createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void> {
             try {
-                console.log('📦 Creating copy for game:', gameId, 'with data:', request);
+                logger.info('Creating copy for game', { gameId, request }, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/copies`, {
@@ -421,7 +408,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 });
 
                 if (response.ok) {
-                    console.log('✅ Copy created successfully');
+                    logger.info('Copy created successfully', undefined, 'API');
                     return;
                 }
 
@@ -440,14 +427,14 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error(`Failed to create copy: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to create game copy:', error);
+                logger.error('Failed to create game copy', error, 'API');
                 throw error;
             }
         },
 
         async associateCopyPricing(copyId: string, request: AssociatePricingRequest): Promise<void> {
             try {
-                console.log(`🔗 Associating pricing for copy ${copyId} with PriceCharting ID:`, request.priceChartingId);
+                logger.info(`Associating pricing for copy ${copyId} with PriceCharting ID`, { priceChartingId: request.priceChartingId }, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}/api/copies/${copyId}/associate`, {
@@ -460,7 +447,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                 });
 
                 if (response.ok) {
-                    console.log('✅ Copy pricing associated successfully');
+                    logger.info('Copy pricing associated successfully', undefined, 'API');
                     return;
                 }
 
@@ -483,7 +470,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
                 throw new Error(`Failed to associate pricing: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to associate copy pricing:', error);
+                logger.error('Failed to associate copy pricing', error, 'API');
                 if (error instanceof Error) {
                     throw error;
                 }
@@ -493,9 +480,9 @@ export function createGameApiService(authService: IAuthenticationService): GameA
 
         async saveGameReview(gameId: string, request: SaveReviewRequest): Promise<void> {
             try {
-                console.log(`📝 Saving review for game ID: ${gameId}`, request);
+                logger.info(`Saving review for game ID: ${gameId}`, request, 'API');
 
-                await makeAuthenticatedRequest<void>(
+                await makeRequest<void>(
                     `${gamesEndpoint}/${gameId}/review`,
                     {
                         method: 'POST',
@@ -506,7 +493,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                     }
                 );
 
-                console.log('✅ Game review saved successfully');
+                logger.info('Game review saved successfully', undefined, 'API');
             } catch (error) {
                 if (error instanceof Error) {
                     if (error.name === 'AbortError') {
@@ -514,25 +501,25 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                     }
                     throw error;
                 }
-                console.error('❌ Failed to save game review:', error);
+                logger.error('Failed to save game review', error, 'API');
                 throw new Error('An unexpected error occurred while saving the review.');
             }
         },
 
         async getGameReview(gameId: string): Promise<GameReview | null> {
             try {
-                console.log(`📖 Fetching review for game ID: ${gameId}`);
+                logger.info(`Fetching review for game ID: ${gameId}`, undefined, 'API');
 
-                const response = await makeAuthenticatedRequest<GameReview>(
+                const response = await makeRequest<GameReview>(
                     `${gamesEndpoint}/${gameId}/review`
                 );
 
-                console.log('✅ Game review fetched successfully');
+                logger.info('Game review fetched successfully', undefined, 'API');
                 return response;
             } catch (error) {
                 if (error instanceof Error) {
                     if (error.message.includes('404')) {
-                        console.log('ℹ️ No review found for this game');
+                        logger.info('No review found for this game', undefined, 'API');
                         return null;
                     }
                     if (error.name === 'AbortError') {
@@ -540,7 +527,7 @@ export function createGameApiService(authService: IAuthenticationService): GameA
                     }
                     throw error;
                 }
-                console.error('❌ Failed to fetch game review:', error);
+                logger.error('Failed to fetch game review', error, 'API');
                 throw new Error('An unexpected error occurred while fetching the review.');
             }
         }
@@ -556,66 +543,14 @@ export function createGameApiServiceWithConfig(
     authService: IAuthenticationService,
     config: GameApiServiceConfig = {}
 ): GameApiService {
-    const baseUrl = config.baseUrl || import.meta.env.VITE_API_BASE_URL || 'https://localhost:7054';
+    const baseUrl = config.baseUrl || environment.apiBaseUrl;
     const timeout = config.timeout || 10000; // 10 seconds default
 
-    async function makeAuthenticatedRequest<T>(
-        url: string,
-        options: RequestInit = {}
-    ): Promise<T> {
-        try {
-            const token = await authService.getAccessToken();
+    const makeAuthenticatedRequest = createAuthenticatedRequestHandler(authService, { timeout });
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-            const headers: Record<string, string> = {
-                'Authorization': `Bearer ${token}`,
-                ...(options.headers as Record<string, string> || {}),
-            };
-
-            // Only set Content-Type for requests with a body (POST, PUT, PATCH)
-            const method = options.method || 'GET';
-            if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) && options.body) {
-                headers['Content-Type'] = 'application/json';
-            }
-
-            const response = await fetch(`${baseUrl}${url}`, {
-                ...options,
-                headers,
-                signal: controller.signal,
-            });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Authentication failed. Please log in again.');
-                }
-                if (response.status === 403) {
-                    throw new Error('Access forbidden. You do not have permission to access this resource.');
-                }
-                if (response.status === 404) {
-                    throw new Error('Resource not found.');
-                }
-                if (response.status >= 500) {
-                    throw new Error('Server error. Please try again later.');
-                }
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            if (error instanceof Error) {
-                if (error.name === 'AbortError') {
-                    throw new Error(`Request timeout after ${timeout}ms`);
-                }
-                throw error;
-            }
-            throw new Error('An unexpected error occurred while making the API request.');
-        }
-    }
+    // Helper to make requests with full URL
+    const makeRequest = <T>(url: string, options?: RequestInit) => 
+        makeAuthenticatedRequest<T>(`${baseUrl}${url}`, options);
 
     const gamesEndpoint = '/api/games';
 
@@ -635,13 +570,13 @@ export function createGameApiServiceWithConfig(
                     }
 
                     url = `${gamesEndpoint}?${searchParams}`;
-                    console.log('🔍 Making paginated request to:', url);
-                    console.log('📊 Pagination params:', pagination);
+                    logger.debug('Making paginated request', { url }, 'API');
+                    logger.debug('Pagination params', pagination, 'API');
                 } else {
-                    console.log('🔍 Making non-paginated request to:', url);
+                    logger.debug('Making non-paginated request', { url }, 'API');
                 }
 
-                const response = await makeAuthenticatedRequest<ListResponse<Game>>(url);
+                const response = await makeRequest<ListResponse<Game>>(url);
 
                 if ('success' in response && response.success) {
                     // Check if this is a paginated response
@@ -664,14 +599,14 @@ export function createGameApiServiceWithConfig(
 
                 throw new Error('Invalid response format from games API');
             } catch (error) {
-                console.error('Failed to fetch games:', error);
+                logger.error('Failed to fetch games', error, 'API');
                 throw error;
             }
         },
 
         async getGameById(id: string): Promise<Game | null> {
             try {
-                const response = await makeAuthenticatedRequest<ApiResponse<Game>>(`${gamesEndpoint}/${id}`);
+                const response = await makeRequest<ApiResponse<Game>>(`${gamesEndpoint}/${id}`);
 
                 if ('success' in response && response.success) {
                     return response.data;
@@ -686,7 +621,27 @@ export function createGameApiServiceWithConfig(
                 if (error instanceof Error && error.message.includes('Resource not found')) {
                     return null;
                 }
-                console.error(`Failed to fetch game with ID ${id}:`, error);
+                logger.error(`Failed to fetch game with ID ${id}`, error, 'API');
+                throw error;
+            }
+        },
+
+        async getRecentGames(): Promise<Game[]> {
+            try {
+                const response = await makeRequest<ListResponse<Game>>(`${gamesEndpoint}/recent`);
+
+                if ('success' in response && response.success) {
+                    return response.data;
+                }
+
+                // If response is directly an array
+                if (Array.isArray(response)) {
+                    return response as Game[];
+                }
+
+                throw new Error('Invalid response format from recent games API');
+            } catch (error) {
+                logger.error('Failed to fetch recent games', error, 'API');
                 throw error;
             }
         },
@@ -698,7 +653,7 @@ export function createGameApiServiceWithConfig(
 
             try {
                 const searchParams = new URLSearchParams({q: query});
-                const response = await makeAuthenticatedRequest<ListResponse<Game>>(
+                const response = await makeRequest<ListResponse<Game>>(
                     `${gamesEndpoint}/search?${searchParams}`
                 );
 
@@ -712,16 +667,16 @@ export function createGameApiServiceWithConfig(
 
                 throw new Error('Invalid response format from games search API');
             } catch (error) {
-                console.error(`Failed to search games with query "${query}":`, error);
+                logger.error(`Failed to search games with query "${query}"`, error, 'API');
                 throw error;
             }
         },
 
         async getMoreLikeThis(gameId: string): Promise<SimilarGame[]> {
             try {
-                console.log(`🎯 Fetching similar games for game ID: ${gameId}`);
+                logger.info(`Fetching similar games for game ID: ${gameId}`, undefined, 'API');
                 
-                const response = await makeAuthenticatedRequest<ListResponse<SimilarGame>>(
+                const response = await makeRequest<ListResponse<SimilarGame>>(
                     `${gamesEndpoint}/${gameId}/more-like-this`
                 );
 
@@ -737,10 +692,10 @@ export function createGameApiServiceWithConfig(
                 throw new Error('Invalid response format from more-like-this API');
             } catch (error) {
                 if (error instanceof Error && error.message.includes('Resource not found')) {
-                    console.log(`ℹ️ No similar games found for game ID: ${gameId}`);
+                    logger.info(`No similar games found for game ID: ${gameId}`, undefined, 'API');
                     return [];
                 }
-                console.error(`Failed to fetch similar games for game ID ${gameId}:`, error);
+                logger.error(`Failed to fetch similar games for game ID ${gameId}`, error, 'API');
                 throw error;
             }
         },
@@ -760,7 +715,7 @@ export function createGameApiServiceWithConfig(
                 // Return true if game exists (200), false if not found (404)
                 return response.status === 200;
             } catch (error) {
-                console.error('Error checking if game exists:', error);
+                logger.error('Error checking if game exists', error, 'API');
                 // If there's an error, assume game doesn't exist to allow proceeding
                 return false;
             }
@@ -768,7 +723,7 @@ export function createGameApiServiceWithConfig(
 
         async saveGame(request: SaveGameRequest): Promise<string> {
             try {
-                console.log('💾 Saving game to collection:', request);
+                logger.info('Saving game to collection', request, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}`, {
@@ -783,7 +738,7 @@ export function createGameApiServiceWithConfig(
                 if (response.ok) {
                     const rawGameId = await response.text();
                     const gameId = rawGameId.replace(/"/g, '').trim();
-                    console.log('✅ Game saved successfully. Game ID:', gameId);
+                    logger.info('Game saved successfully', { gameId }, 'API');
                     return gameId;
                 }
 
@@ -799,14 +754,14 @@ export function createGameApiServiceWithConfig(
 
                 throw new Error(`Failed to save game: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to save game:', error);
+                logger.error('Failed to save game', error, 'API');
                 throw error;
             }
         },
 
         async updateGame(gameId: string, request: UpdateGameRequest): Promise<void> {
             try {
-                console.log('📝 Updating game:', gameId, 'with data:', request);
+                logger.info('Updating game', { gameId, request }, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}`, {
@@ -819,7 +774,7 @@ export function createGameApiServiceWithConfig(
                 });
 
                 if (response.ok) {
-                    console.log('✅ Game updated successfully');
+                    logger.info('Game updated successfully', undefined, 'API');
                     return;
                 }
 
@@ -838,14 +793,14 @@ export function createGameApiServiceWithConfig(
 
                 throw new Error(`Failed to update game: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to update game:', error);
+                logger.error('Failed to update game', error, 'API');
                 throw error;
             }
         },
 
         async linkGameToIgdb(gameId: string, request: LinkGameToIgdbRequest): Promise<void> {
             try {
-                console.log('🔗 Linking game to IGDB:', gameId, 'with IGDB ID:', request.igdbGameId);
+                logger.info('Linking game to IGDB', { gameId, igdbGameId: request.igdbGameId }, 'API');
 
                 const token = await authService.getAccessToken();
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/link`, {
@@ -860,7 +815,7 @@ export function createGameApiServiceWithConfig(
                 if (response.ok) {
                     const rawLinkedGameId = await response.text();
                     const linkedGameId = rawLinkedGameId.replace(/"/g, '').trim();
-                    console.log('✅ Game linked to IGDB successfully. Linked game ID:', linkedGameId);
+                    logger.info('Game linked to IGDB successfully', { linkedGameId }, 'API');
                     return;
                 }
 
@@ -876,14 +831,14 @@ export function createGameApiServiceWithConfig(
 
                 throw new Error(`Failed to link game: ${response.status} ${response.statusText}`);
             } catch (error) {
-                console.error('❌ Failed to link game to IGDB:', error);
+                logger.error('Failed to link game to IGDB', error, 'API');
                 throw error;
             }
         },
 
         async createGameCopy(gameId: string, request: CreateCopyRequest): Promise<void> {
             try {
-                console.log('📦 Creating copy for game:', gameId, 'with data:', request);
+                logger.info('Creating copy for game', { gameId, request }, 'API');
 
                 const token = await authService.getAccessToken();
                 const controller = new AbortController();
@@ -902,7 +857,7 @@ export function createGameApiServiceWithConfig(
                 clearTimeout(timeoutId);
 
                 if (response.ok) {
-                    console.log('✅ Copy created successfully');
+                    logger.info('Copy created successfully', undefined, 'API');
                     return;
                 }
 
@@ -930,14 +885,14 @@ export function createGameApiServiceWithConfig(
                     }
                     throw error;
                 }
-                console.error('❌ Failed to create game copy:', error);
+                logger.error('Failed to create game copy', error, 'API');
                 throw new Error('An unexpected error occurred while creating the copy.');
             }
         },
 
         async associateCopyPricing(copyId: string, request: AssociatePricingRequest): Promise<void> {
             try {
-                console.log(`🔗 Associating pricing for copy ${copyId} with PriceCharting ID:`, request.priceChartingId);
+                logger.info(`Associating pricing for copy ${copyId} with PriceCharting ID`, { priceChartingId: request.priceChartingId }, 'API');
 
                 const token = await authService.getAccessToken();
                 const timeout = 30000;
@@ -957,7 +912,7 @@ export function createGameApiServiceWithConfig(
                 clearTimeout(timeoutId);
 
                 if (response.ok) {
-                    console.log('✅ Copy pricing associated successfully');
+                    logger.info('Copy pricing associated successfully', undefined, 'API');
                     return;
                 }
 
@@ -986,14 +941,14 @@ export function createGameApiServiceWithConfig(
                     }
                     throw error;
                 }
-                console.error('❌ Failed to associate copy pricing:', error);
+                logger.error('Failed to associate copy pricing', error, 'API');
                 throw new Error('An unexpected error occurred while associating pricing.');
             }
         },
 
         async saveGameReview(gameId: string, request: SaveReviewRequest): Promise<void> {
             try {
-                console.log(`📝 Saving review for game ID: ${gameId}`, request);
+                logger.info(`Saving review for game ID: ${gameId}`, request, 'API');
 
                 const response = await fetch(`${baseUrl}${gamesEndpoint}/${gameId}/review`, {
                     method: 'POST',
@@ -1014,7 +969,7 @@ export function createGameApiServiceWithConfig(
                     throw new Error(`Failed to save review: ${response.status} ${response.statusText}`);
                 }
 
-                console.log('✅ Game review saved successfully');
+                logger.info('Game review saved successfully', undefined, 'API');
             } catch (error) {
                 if (error instanceof Error) {
                     if (error.name === 'AbortError') {
@@ -1022,7 +977,7 @@ export function createGameApiServiceWithConfig(
                     }
                     throw error;
                 }
-                console.error('❌ Failed to save game review:', error);
+                logger.error('Failed to save game review', error, 'API');
                 throw new Error('An unexpected error occurred while saving the review.');
             }
         }

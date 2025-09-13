@@ -1,5 +1,6 @@
 import type { CollectionStats } from '../../domain/models';
 import type { IAuthenticationService } from '../../domain/interfaces/IAuthenticationService';
+import { logger } from '../../shared/utils/logger';
 
 export interface StatsApiService {
   getStats(): Promise<CollectionStats>;
@@ -27,8 +28,7 @@ export function createStatsApiService(authService: IAuthenticationService): Stat
         headers['Content-Type'] = 'application/json';
       }
 
-      console.log('📊 Making stats API request to:', `${baseUrl}${url}`);
-      console.log('📋 Request headers:', headers);
+      logger.debug('Making stats API request', { url: `${baseUrl}${url}`, headers }, 'API');
 
       const response = await fetch(`${baseUrl}${url}`, {
         ...options,
@@ -58,12 +58,12 @@ export function createStatsApiService(authService: IAuthenticationService): Stat
   return {
     async getStats(): Promise<CollectionStats> {
       try {
-        console.log('📊 Fetching collection stats');
+        logger.info('Fetching collection stats', undefined, 'API');
         const stats = await makeAuthenticatedRequest<CollectionStats>(statsEndpoint);
-        console.log('✅ Stats received:', stats);
+        logger.info('Stats received', stats, 'API');
         return stats;
       } catch (error) {
-        console.error('❌ Failed to fetch stats:', error);
+        logger.error('Failed to fetch stats', error, 'API');
         throw error;
       }
     }

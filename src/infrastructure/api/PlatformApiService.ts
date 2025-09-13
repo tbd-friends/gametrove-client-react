@@ -1,5 +1,6 @@
 import type { Platform } from '../../domain/models';
 import type { IAuthenticationService } from '../../domain/interfaces/IAuthenticationService';
+import { logger } from '../../shared/utils/logger';
 
 /**
  * Platform mapping request structure matching the C# backend Mapping object format
@@ -48,7 +49,7 @@ export function createPlatformApiService(authService: IAuthenticationService): P
 
             return await response.json();
         } catch (error) {
-            console.error('API request failed:', error);
+            logger.error('API request failed', error, 'API');
 
             throw error;
         }
@@ -57,24 +58,24 @@ export function createPlatformApiService(authService: IAuthenticationService): P
     return {
         async getAllPlatforms(): Promise<Platform[]> {
             try {
-                console.log('🎮 Fetching all platforms from API');
+                logger.info('Fetching all platforms from API', undefined, 'API');
                 const platforms = await makeAuthenticatedRequest<Platform[]>(platformsEndpoint);
                 
                 if (Array.isArray(platforms)) {
-                    console.log(`✅ Loaded ${platforms.length} platforms`);
+                    logger.info(`Loaded ${platforms.length} platforms`, undefined, 'API');
                     return platforms;
                 }
                 
                 throw new Error('Invalid response format from platforms API');
             } catch (error) {
-                console.error('Failed to fetch platforms:', error);
+                logger.error('Failed to fetch platforms', error, 'API');
                 throw error;
             }
         },
 
         async publishPlatformMappings(mappings: PlatformMappingRequest): Promise<void> {
             try {
-                console.log('🔗 Publishing platform mappings to server:', mappings);
+                logger.info('Publishing platform mappings to server', mappings, 'API');
                 
                 await makeAuthenticatedRequest<void>(mappingsEndpoint, {
                     method: 'POST',
@@ -84,9 +85,9 @@ export function createPlatformApiService(authService: IAuthenticationService): P
                     body: JSON.stringify(mappings),
                 });
                 
-                console.log('✅ Platform mappings published successfully');
+                logger.info('Platform mappings published successfully', undefined, 'API');
             } catch (error) {
-                console.error('Failed to publish platform mappings:', error);
+                logger.error('Failed to publish platform mappings', error, 'API');
                 throw error;
             }
         }

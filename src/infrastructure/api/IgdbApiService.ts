@@ -1,5 +1,6 @@
 import type { IAuthenticationService } from '../../domain/interfaces/IAuthenticationService';
 import type { IgdbPlatform } from '../../domain/models/IgdbGame';
+import { logger } from '../../shared/utils/logger';
 
 /**
  * IGDB search result interface matching the API response
@@ -105,7 +106,7 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
 
             return await response.json();
         } catch (error) {
-            console.error('IGDB API request failed:', error);
+            logger.error('IGDB API request failed', error, 'API');
             throw error;
         }
     }
@@ -122,7 +123,7 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
     return {
         async searchGames(term: string, platformId: number): Promise<IgdbGameResult[]> {
             try {
-                console.log('🎮 Searching IGDB for games:', { term, platformId });
+                logger.info('Searching IGDB for games', { term, platformId }, 'API');
                 
                 const searchParams = new URLSearchParams({
                     term: term.trim(),
@@ -134,13 +135,13 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
                 );
                 
                 if (Array.isArray(games)) {
-                    console.log(`✅ Found ${games.length} games from IGDB`);
+                    logger.info(`Found ${games.length} games from IGDB`, undefined, 'API');
                     return games;
                 }
                 
                 throw new Error('Invalid response format from IGDB search API');
             } catch (error) {
-                console.error('Failed to search IGDB:', error);
+                logger.error('Failed to search IGDB', error, 'API');
                 throw error;
             }
         },
@@ -149,11 +150,11 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
             try {
                 // Check cache first
                 if (isCacheValid()) {
-                    console.log('🎮 Using cached IGDB platforms');
+                    logger.info('Using cached IGDB platforms', undefined, 'API');
                     return platformCache.data!;
                 }
 
-                console.log('🎮 Fetching IGDB platforms from API');
+                logger.info('Fetching IGDB platforms from API', undefined, 'API');
                 const platforms = await makeAuthenticatedRequest<IgdbPlatform[]>(platformsEndpoint);
                 
                 if (Array.isArray(platforms)) {
@@ -164,19 +165,19 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
                         ttl: platformCache.ttl
                     };
                     
-                    console.log(`✅ Loaded ${platforms.length} IGDB platforms and cached`);
+                    logger.info(`Loaded ${platforms.length} IGDB platforms and cached`, undefined, 'API');
                     return platforms;
                 }
                 
                 throw new Error('Invalid response format from IGDB platforms API');
             } catch (error) {
-                console.error('Failed to fetch IGDB platforms:', error);
+                logger.error('Failed to fetch IGDB platforms', error, 'API');
                 throw error;
             }
         },
 
         clearPlatformsCache(): void {
-            console.log('🗑️ Clearing IGDB platforms cache');
+            logger.info('Clearing IGDB platforms cache', undefined, 'API');
             platformCache = {
                 data: null,
                 timestamp: 0,
@@ -186,16 +187,16 @@ export function createIgdbApiService(authService: IAuthenticationService): IgdbA
 
         async getGameDetails(igdbGameId: number): Promise<IgdbGameDetails> {
             try {
-                console.log('🎮 Fetching IGDB game details for ID:', igdbGameId);
+                logger.info('Fetching IGDB game details for ID', { igdbGameId }, 'API');
                 
                 const gameDetails = await makeAuthenticatedRequest<IgdbGameDetails>(
                     `/api/igdb/games/${igdbGameId}`
                 );
                 
-                console.log('✅ Loaded IGDB game details:', gameDetails);
+                logger.info('Loaded IGDB game details', gameDetails, 'API');
                 return gameDetails;
             } catch (error) {
-                console.error('Failed to fetch IGDB game details:', error);
+                logger.error('Failed to fetch IGDB game details', error, 'API');
                 throw error;
             }
         }
