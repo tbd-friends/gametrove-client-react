@@ -1,6 +1,8 @@
 import type {IAuthenticationService} from "../../domain/interfaces/IAuthenticationService.ts";
 import type {User} from "../../domain/entities/User.ts";
 import {useAuth0} from "@auth0/auth0-react";
+import {environment} from "../../shared/config/environment";
+import {logger} from "../../shared/utils/logger";
 
 export interface Auth0ServiceState {
     error: Error | undefined;
@@ -41,31 +43,23 @@ export const createAuth0Service = (
 
         async getAccessToken(): Promise<string> {
             try {
-                const audience = import.meta.env.VITE_API_AUDIENCE;
-                const tokenOptions = audience ? { audience } : {};
-                
-                console.log('🎯 Requesting access token with options:', tokenOptions);
+                const tokenOptions = { audience: environment.apiAudience };
                 const token = await getAccessTokenSilently(tokenOptions);
-                console.log('🔑 Auth0 getAccessTokenSilently result:', token ? `${token.substring(0, 20)}...` : 'EMPTY TOKEN');
                 return token;
             } catch (error) {
-                console.error('❌ Failed to get access token:', error);
+                logger.error('Failed to get access token', error instanceof Error ? error.message : error, 'AUTH');
                 
                 // If it's a refresh token error, try to get token by forcing a login popup
                 if (error instanceof Error && error.message.includes('Missing Refresh Token')) {
-                    console.log('🔄 Refresh token missing, trying with login_required...');
                     try {
-                        const audience = import.meta.env.VITE_API_AUDIENCE;
-                        const tokenOptions = audience ? { 
-                            audience,
+                        const tokenOptions = { 
+                            audience: environment.apiAudience,
                             ignoreCache: true 
-                        } : { ignoreCache: true };
+                        };
                         
                         const token = await getAccessTokenSilently(tokenOptions);
-                        console.log('🔑 Retry successful:', token ? `${token.substring(0, 20)}...` : 'EMPTY TOKEN');
                         return token;
                     } catch (retryError) {
-                        console.error('❌ Retry failed:', retryError);
                         throw new Error('Authentication failed. Please log out and log in again.');
                     }
                 }

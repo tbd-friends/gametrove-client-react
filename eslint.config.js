@@ -19,5 +19,30 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Prevent console.log statements in production code
+      'no-console': ['error', { 
+        allow: ['warn', 'error'] // Allow console.warn and console.error for essential logging
+      }],
+      
+      // Enforce consistent type imports
+      '@typescript-eslint/consistent-type-imports': ['error', {
+        prefer: 'type-imports',
+        disallowTypeAnnotations: false,
+        fixStyle: 'separate-type-imports'
+      }],
+      
+      // Ensure unused variables are caught
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+      
+      // Prevent any types
+      '@typescript-eslint/no-explicit-any': 'error',
+      
+      // Prevent empty catch blocks (use standard rule)
+      'no-empty': ['error', { "allowEmptyCatch": false }]
+    },
   },
 ])

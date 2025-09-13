@@ -5,20 +5,12 @@ import {AuthContext, type AuthContextType} from "./AuthContext.tsx";
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({children}) => {
     const authService = useAuth0Service();
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const hasRole = (_role: string): boolean => {
-        return false;
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const hasPermission = (_permission: string): boolean => {
-        return false;
-    };
+    // TODO: Implement proper role-based access control
+    // For now, removing these functions to prevent false security assumptions
+    // When implementing, parse JWT token claims for roles and permissions
 
     const contextValue: AuthContextType = {
-        ...authService,
-        hasRole,
-        hasPermission
+        ...authService
     };
 
     return (

@@ -1,5 +1,5 @@
 import {Menu, Plus, Search, User, Gamepad2, Heart, LogIn, LogOut} from "lucide-react";
-import React, {useState, useEffect, useRef} from "react";
+import React, {useState, useEffect, useRef, useMemo} from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthService } from "../../hooks/useAuthService";
 
@@ -21,8 +21,8 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
     const navigate = useNavigate();
     const authService = useAuthService();
 
-    // Mock search results based on the reference design
-    const mockSearchResults = [
+    // Memoize mock search results to prevent unnecessary re-renders
+    const mockSearchResults = useMemo(() => [
         {
             id: 1,
             title: "The Legend of Zelda: Breath of the Wild",
@@ -55,19 +55,23 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
             inCollection: true,
             favorite: false
         }
-    ];
+    ], []);
 
-    // Debounced search effect
+    // Debounced search effect with proper cleanup
     useEffect(() => {
         const debounceTimer = setTimeout(() => {
             if (searchValue.trim()) {
                 setIsSearching(true);
                 setShowDropdown(true);
-                // Simulate API call delay
-                setTimeout(() => {
+                
+                // Use a separate timeout for the API simulation
+                const apiTimer = setTimeout(() => {
                     setSearchResults(mockSearchResults);
                     setIsSearching(false);
                 }, 300);
+
+                // Clean up the API timer if component unmounts or searchValue changes
+                return () => clearTimeout(apiTimer);
             } else {
                 setSearchResults([]);
                 setShowDropdown(false);

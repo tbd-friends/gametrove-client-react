@@ -5,6 +5,7 @@ import {Dashboard, MyCollection, Consoles, AddGame, Settings, GameDetail, LinkGa
 import { AuthProvider } from './presentation/contexts/AuthContext.tsx';
 import { ProfileProvider } from './application/context/ProfileContext.tsx';
 import { useAuthService } from './presentation/hooks/useAuthService';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
 
 function AppContent() {
     const { isAuthenticated, isLoading } = useAuthService();
@@ -26,15 +27,51 @@ function AppContent() {
             <Router>
                 <Routes>
                     <Route path="/" element={<DashboardLayout/>}>
-                        <Route index element={<Dashboard/>}/>
-                        <Route path="collection" element={<MyCollection/>}/>
-                        <Route path="collection/console/:consoleName" element={<MyCollection/>}/>
-                        <Route path="collection/game/:gameId" element={<GameDetail/>}/>
-                        <Route path="collection/console/:consoleName/game/:gameId" element={<GameDetail/>}/>
-                        <Route path="collection/game/:gameId/link-igdb" element={<LinkGameToIgdb/>}/>
-                        <Route path="consoles" element={<Consoles/>}/>
-                        <Route path="add-game" element={<AddGame/>}/>
-                        <Route path="settings" element={<Settings/>}/>
+                        <Route index element={
+                            <ErrorBoundary level="component">
+                                <Dashboard/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="collection" element={
+                            <ErrorBoundary level="component">
+                                <MyCollection/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="collection/console/:consoleName" element={
+                            <ErrorBoundary level="component">
+                                <MyCollection/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="collection/game/:gameId" element={
+                            <ErrorBoundary level="component">
+                                <GameDetail/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="collection/console/:consoleName/game/:gameId" element={
+                            <ErrorBoundary level="component">
+                                <GameDetail/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="collection/game/:gameId/link-igdb" element={
+                            <ErrorBoundary level="component">
+                                <LinkGameToIgdb/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="consoles" element={
+                            <ErrorBoundary level="component">
+                                <Consoles/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="add-game" element={
+                            <ErrorBoundary level="component">
+                                <AddGame/>
+                            </ErrorBoundary>
+                        }/>
+                        <Route path="settings" element={
+                            <ErrorBoundary level="component">
+                                <Settings/>
+                            </ErrorBoundary>
+                        }/>
                     </Route>
                 </Routes>
             </Router>
@@ -44,9 +81,19 @@ function AppContent() {
 
 function App() {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <ErrorBoundary 
+            level="root"
+            onError={(error, errorInfo) => {
+                // TODO: Send to error reporting service
+                console.error('Root level error:', error, errorInfo);
+            }}
+        >
+            <AuthProvider>
+                <ErrorBoundary level="page">
+                    <AppContent />
+                </ErrorBoundary>
+            </AuthProvider>
+        </ErrorBoundary>
     )
 }
 

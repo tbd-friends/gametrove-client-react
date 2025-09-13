@@ -1,0 +1,127 @@
+[
+  {
+    "igdbGameId": 37134,
+    "platform": {
+      "manufacturer": null,
+      "igdbPlatformId": 48,
+      "id": "576bc85f-bab1-40b9-add2-b41f625aca9c",
+      "url": "platforms/576bc85f-bab1-40b9-add2-b41f625aca9c",
+      "description": "Playstation 4"
+    },
+    "publisher": {
+      "id": "07922a74-fc38-4a85-a7e1-486f1935de56",
+      "url": "publishers/07922a74-fc38-4a85-a7e1-486f1935de56",
+      "description": "Bandai Namco"
+    },
+    "overallRating": null,
+    "averages": {
+      "completeInBoxDifference": 19.6374622300,
+      "looseDifference": -2.5365103700,
+      "newDifference": 13.2990867500
+    },
+    "copyCount": 1,
+    "id": "43f075f1-e47d-4754-9a78-fb4c06156f8d",
+    "url": "games/43f075f1-e47d-4754-9a78-fb4c06156f8d",
+    "description": ".hack//G.U. Last Recode"
+  },
+  {
+    "igdbGameId": 1638,
+    "platform": {
+      "manufacturer": null,
+      "igdbPlatformId": 4,
+      "id": "e02e392e-1e47-4d53-9422-44b6064528d9",
+      "url": "platforms/e02e392e-1e47-4d53-9422-44b6064528d9",
+      "description": "N64"
+    },
+    "publisher": {
+      "id": "7934b8f7-76cd-408c-b5eb-7700f6346630",
+      "url": "publishers/7934b8f7-76cd-408c-b5eb-7700f6346630",
+      "description": "Nintendo"
+    },
+    "overallRating": 75,
+    "averages": {
+      "completeInBoxDifference": -1.4031675400,
+      "looseDifference": 0.0000000000,
+      "newDifference": -14.4488551300
+    },
+    "copyCount": 1,
+    "id": "8928c0dc-5309-4801-b758-8c7afcd3a71e",
+    "url": "games/8928c0dc-5309-4801-b758-8c7afcd3a71e",
+    "description": "007 Goldeneye"
+  },
+  {
+    "igdbGameId": 144507,
+    "platform": {
+      "manufacturer": null,
+      "igdbPlatformId": 4,
+      "id": "e02e392e-1e47-4d53-9422-44b6064528d9",
+      "url": "platforms/e02e392e-1e47-4d53-9422-44b6064528d9",
+      "description": "N64"
+    },
+    "publisher": {
+      "id": "59f588f3-af02-4be0-9127-4129f8321dfd",
+      "url": "publishers/59f588f3-af02-4be0-9127-4129f8321dfd",
+      "description": "Electronic Arts"
+    },
+    "overallRating": null,
+    "averages": {
+      "completeInBoxDifference": -0.0205296600,
+      "looseDifference": 10.0133511300,
+      "newDifference": 0.0000000000
+    },
+    "copyCount": 1,
+    "id": "d07c3acc-9439-4374-ac14-f0e7f01a89c3",
+    "url": "games/d07c3acc-9439-4374-ac14-f0e7f01a89c3",
+    "description": "007 The World is Not Enough"
+  },
+  {
+    "igdbGameId": 26762,
+    "platform": {
+      "manufacturer": null,
+      "igdbPlatformId": 130,
+      "id": "c65523d0-7f4e-4425-a1a9-347be3a40b1b",
+      "url": "platforms/c65523d0-7f4e-4425-a1a9-347be3a40b1b",
+      "description": "Switch"
+    },
+    "publisher": {
+      "id": "7934b8f7-76cd-408c-b5eb-7700f6346630",
+      "url": "publishers/7934b8f7-76cd-408c-b5eb-7700f6346630",
+      "description": "Nintendo"
+    },
+    "overallRating": null,
+    "averages": {
+      "completeInBoxDifference": -22.1284575700,
+      "looseDifference": -13.9644351400,
+      "newDifference": 26.2852163800
+    },
+    "copyCount": 1,
+    "id": "174ca76e-ef26-4315-9d87-c0459a5b7b25",
+    "url": "games/174ca76e-ef26-4315-9d87-c0459a5b7b25",
+    "description": "1 2 Switch"
+  },
+  {
+    "igdbGameId": 3328,
+    "platform": {
+      "manufacturer": null,
+      "igdbPlatformId": 4,
+      "id": "e02e392e-1e47-4d53-9422-44b6064528d9",
+      "url": "platforms/e02e392e-1e47-4d53-9422-44b6064528d9",
+      "description": "N64"
+    },
+    "publisher": {
+      "id": "7934b8f7-76cd-408c-b5eb-7700f6346630",
+      "url": "publishers/7934b8f7-76cd-408c-b5eb-7700f6346630",
+      "description": "Nintendo"
+    },
+    "overallRating": null,
+    "averages": {
+      "completeInBoxDifference": 3.1645569600,
+      "looseDifference": 3.0000000000,
+      "newDifference": 0.0594348200
+    },
+    "copyCount": 1,
+    "id": "eabfe5e2-d018-483d-80b8-9387aefa0d6a",
+    "url": "games/eabfe5e2-d018-483d-80b8-9387aefa0d6a",
+    "description": "1080 Snowboarding"
+  }
+]
