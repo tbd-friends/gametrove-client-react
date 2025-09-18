@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useGamesData } from '../useGamesData'
 import { createMockAuthService, mockGames } from '../../../test/mocks'
+import * as authModule from '../useAuthService'
 import { server } from '../../../test/server'
 import { http, HttpResponse } from 'msw'
 
@@ -330,7 +331,7 @@ describe('useGamesData', () => {
   describe('Authentication Integration', () => {
     it('should not load games when not authenticated', async () => {
       // Mock unauthenticated state
-      vi.mocked(require('../useAuthService').useAuthService).mockReturnValue({
+      vi.mocked(authModule.useAuthService).mockReturnValue({
         isAuthenticated: false,
         isLoading: false,
         getAccessToken: vi.fn(),
@@ -348,7 +349,7 @@ describe('useGamesData', () => {
 
     it('should wait for auth loading to complete', async () => {
       // Mock loading auth state
-      vi.mocked(require('../useAuthService').useAuthService).mockReturnValue({
+      vi.mocked(authModule.useAuthService).mockReturnValue({
         isAuthenticated: true,
         isLoading: true,
         getAccessToken: vi.fn(),

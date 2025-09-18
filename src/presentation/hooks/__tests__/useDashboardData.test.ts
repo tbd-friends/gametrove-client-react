@@ -11,6 +11,10 @@ import { server } from '../../../test/server'
 import { http, HttpResponse } from 'msw'
 
 // Mock dependencies
+import * as authModule from '../useAuthService'
+import * as hooksModule from '../index'
+import * as apiModule from '../../../infrastructure/api'
+
 vi.mock('../useAuthService', () => ({
   useAuthService: () => createMockAuthService()
 }))
@@ -222,7 +226,7 @@ describe('useDashboardData', () => {
 
     it('should not load highlights when PriceCharting is disabled', async () => {
       // Mock disabled PriceCharting
-      vi.mocked(require('../index').usePriceCharting).mockReturnValue({
+      vi.mocked(hooksModule.usePriceCharting).mockReturnValue({
         isEnabled: false,
         isLoading: false
       })
@@ -240,7 +244,7 @@ describe('useDashboardData', () => {
     it('should handle price highlights loading errors', async () => {
       // Mock API service to throw error
       const mockCreatePriceChartingApiService = vi.mocked(
-        require('../../../infrastructure/api').createPriceChartingApiService
+        apiModule.createPriceChartingApiService
       )
       mockCreatePriceChartingApiService.mockReturnValue({
         getHighlights: vi.fn().mockRejectedValue(new Error('PriceCharting API error'))
@@ -322,7 +326,7 @@ describe('useDashboardData', () => {
   describe('Authentication Integration', () => {
     it('should not load data when not authenticated', async () => {
       // Mock unauthenticated state
-      vi.mocked(require('../useAuthService').useAuthService).mockReturnValue({
+      vi.mocked(authModule.useAuthService).mockReturnValue({
         isAuthenticated: false,
         isLoading: false,
         getAccessToken: vi.fn(),
@@ -359,7 +363,7 @@ describe('useDashboardData', () => {
         logout: vi.fn()
       }
       
-      vi.mocked(require('../useAuthService').useAuthService).mockReturnValue(mockAuthService)
+      vi.mocked(authModule.useAuthService).mockReturnValue(mockAuthService)
 
       const { result, rerender } = renderHook(() => useDashboardData())
 

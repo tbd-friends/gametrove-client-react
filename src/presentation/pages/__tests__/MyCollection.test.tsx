@@ -13,6 +13,8 @@ import { server } from '../../../test/server'
 import { http, HttpResponse } from 'msw'
 
 // Mock the custom hooks used by MyCollection
+import * as hooks from '../../hooks'
+
 vi.mock('../../hooks', () => ({
   usePagination: vi.fn(() => ({
     currentPage: 1,
@@ -142,7 +144,7 @@ describe('MyCollection', () => {
 
   describe('Loading States', () => {
     it('should show loading spinner when loading games', () => {
-      const mockUseGamesData = vi.mocked(require('../../hooks').useGamesData)
+      const mockUseGamesData = vi.mocked(hooks.useGamesData)
       mockUseGamesData.mockReturnValue({
         games: [],
         loading: true,
@@ -160,7 +162,7 @@ describe('MyCollection', () => {
     })
 
     it('should show pagination loading overlay', () => {
-      const mockUseGamesData = vi.mocked(require('../../hooks').useGamesData)
+      const mockUseGamesData = vi.mocked(hooks.useGamesData)
       mockUseGamesData.mockReturnValue({
         games: mockGames,
         loading: false,
@@ -181,7 +183,7 @@ describe('MyCollection', () => {
 
   describe('Error States', () => {
     it('should show error message when games fail to load', () => {
-      const mockUseGamesData = vi.mocked(require('../../hooks').useGamesData)
+      const mockUseGamesData = vi.mocked(hooks.useGamesData)
       mockUseGamesData.mockReturnValue({
         games: [],
         loading: false,
@@ -200,7 +202,7 @@ describe('MyCollection', () => {
     })
 
     it('should reload page when retry button is clicked', () => {
-      const mockUseGamesData = vi.mocked(require('../../hooks').useGamesData)
+      const mockUseGamesData = vi.mocked(hooks.useGamesData)
       mockUseGamesData.mockReturnValue({
         games: [],
         loading: false,
@@ -230,7 +232,7 @@ describe('MyCollection', () => {
   describe('Search Functionality', () => {
     it('should update search value when typing', async () => {
       const mockSetSearchValue = vi.fn()
-      const mockUseCollectionSearch = vi.mocked(require('../../hooks').useCollectionSearch)
+      const mockUseCollectionSearch = vi.mocked(hooks.useCollectionSearch)
       mockUseCollectionSearch.mockReturnValue({
         searchValue: '',
         debouncedSearchValue: '',
@@ -249,7 +251,7 @@ describe('MyCollection', () => {
     })
 
     it('should show clear button when search has value', () => {
-      const mockUseCollectionSearch = vi.mocked(require('../../hooks').useCollectionSearch)
+      const mockUseCollectionSearch = vi.mocked(hooks.useCollectionSearch)
       mockUseCollectionSearch.mockReturnValue({
         searchValue: 'Zelda',
         debouncedSearchValue: 'Zelda',
@@ -266,7 +268,7 @@ describe('MyCollection', () => {
 
     it('should clear search when clear button is clicked', async () => {
       const mockSetSearchValue = vi.fn()
-      const mockUseCollectionSearch = vi.mocked(require('../../hooks').useCollectionSearch)
+      const mockUseCollectionSearch = vi.mocked(hooks.useCollectionSearch)
       mockUseCollectionSearch.mockReturnValue({
         searchValue: 'Zelda',
         debouncedSearchValue: 'Zelda',
@@ -285,7 +287,7 @@ describe('MyCollection', () => {
 
     it('should handle barcode scanner integration', async () => {
       const mockSetIsSearchFieldFocused = vi.fn()
-      const mockUseCollectionSearch = vi.mocked(require('../../hooks').useCollectionSearch)
+      const mockUseCollectionSearch = vi.mocked(hooks.useCollectionSearch)
       mockUseCollectionSearch.mockReturnValue({
         searchValue: '',
         debouncedSearchValue: '',
@@ -311,7 +313,7 @@ describe('MyCollection', () => {
   describe('View Mode Switching', () => {
     it('should switch to console view when console button is clicked', async () => {
       const mockUpdateViewMode = vi.fn()
-      const mockUseViewMode = vi.mocked(require('../../hooks').useViewMode)
+      const mockUseViewMode = vi.mocked(hooks.useViewMode)
       mockUseViewMode.mockReturnValue({
         viewMode: 'list',
         updateViewMode: mockUpdateViewMode
@@ -326,7 +328,7 @@ describe('MyCollection', () => {
     })
 
     it('should show consoles grid in console view mode', () => {
-      const mockUseViewMode = vi.mocked(require('../../hooks').useViewMode)
+      const mockUseViewMode = vi.mocked(hooks.useViewMode)
       mockUseViewMode.mockReturnValue({
         viewMode: 'console',
         updateViewMode: vi.fn()
@@ -347,7 +349,7 @@ describe('MyCollection', () => {
         useParams: () => ({})
       }))
 
-      const mockUseViewMode = vi.mocked(require('../../hooks').useViewMode)
+      const mockUseViewMode = vi.mocked(hooks.useViewMode)
       mockUseViewMode.mockReturnValue({
         viewMode: 'console',
         updateViewMode: vi.fn()
@@ -364,7 +366,7 @@ describe('MyCollection', () => {
 
   describe('Console-Specific View', () => {
     it('should show breadcrumb for console-specific view', () => {
-      const mockUseConsoleData = vi.mocked(require('../../hooks').useConsoleData)
+      const mockUseConsoleData = vi.mocked(hooks.useConsoleData)
       mockUseConsoleData.mockReturnValue({
         selectedConsole: { name: 'Nintendo Switch' },
         filteredGames: mockGames.filter(game => game.platform === 'Nintendo Switch')
@@ -378,7 +380,7 @@ describe('MyCollection', () => {
     })
 
     it('should hide view mode toggle for console-specific view', () => {
-      const mockUseConsoleData = vi.mocked(require('../../hooks').useConsoleData)
+      const mockUseConsoleData = vi.mocked(hooks.useConsoleData)
       mockUseConsoleData.mockReturnValue({
         selectedConsole: { name: 'Nintendo Switch' },
         filteredGames: mockGames.filter(game => game.platform === 'Nintendo Switch')
@@ -393,7 +395,7 @@ describe('MyCollection', () => {
 
     it('should show filtered game count for console', () => {
       const switchGames = mockGames.filter(game => game.platform === 'Nintendo Switch')
-      const mockUseConsoleData = vi.mocked(require('../../hooks').useConsoleData)
+      const mockUseConsoleData = vi.mocked(hooks.useConsoleData)
       mockUseConsoleData.mockReturnValue({
         selectedConsole: { name: 'Nintendo Switch' },
         filteredGames: switchGames
@@ -407,7 +409,7 @@ describe('MyCollection', () => {
 
   describe('Pagination', () => {
     it('should show pagination controls when pagination is enabled', () => {
-      const mockUseGamesData = vi.mocked(require('../../hooks').useGamesData)
+      const mockUseGamesData = vi.mocked(hooks.useGamesData)
       mockUseGamesData.mockReturnValue({
         games: mockGames,
         loading: false,
@@ -418,7 +420,7 @@ describe('MyCollection', () => {
         totalPages: 3
       })
 
-      const mockUsePagination = vi.mocked(require('../../hooks').usePagination)
+      const mockUsePagination = vi.mocked(hooks.usePagination)
       mockUsePagination.mockReturnValue({
         currentPage: 2,
         pageSize: 20,
@@ -439,7 +441,7 @@ describe('MyCollection', () => {
     })
 
     it('should show all games info when pagination is disabled', () => {
-      const mockUseGamesData = vi.mocked(require('../../hooks').useGamesData)
+      const mockUseGamesData = vi.mocked(hooks.useGamesData)
       mockUseGamesData.mockReturnValue({
         games: mockGames,
         loading: false,
@@ -484,7 +486,7 @@ describe('MyCollection', () => {
     })
 
     it('should have proper ARIA labels for clear search button', () => {
-      const mockUseCollectionSearch = vi.mocked(require('../../hooks').useCollectionSearch)
+      const mockUseCollectionSearch = vi.mocked(hooks.useCollectionSearch)
       mockUseCollectionSearch.mockReturnValue({
         searchValue: 'Zelda',
         debouncedSearchValue: 'Zelda',
