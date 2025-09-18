@@ -1,5 +1,15 @@
 # Gametrove 2025 - Game Collection Management Application
 
+### Creator Note
+
+A vast majority of this application has been created using Claude Code. As such, there is a lot 
+of noise with files I've added to support "vibe coding", and I've decided to leave
+documents and such created as a result to be more transparent. This repository is 
+complimenting https://github.com/tbd-friends/gametrove-backend, where all the backend pieces live. That application
+has not been created with heavy AI assistance. 
+
+## Intro
+
 A modern, full-featured React application for managing and tracking your video game collection. Built with React 19.1, TypeScript, and Tailwind CSS following Clean Architecture principles.
 
 ## Features
