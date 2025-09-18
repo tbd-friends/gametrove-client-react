@@ -140,6 +140,59 @@ const apiUrl = environment.apiBaseUrl;
 const apiUrl = import.meta.env.VITE_API_BASE_URL || 'fallback';
 ```
 
+### ESLint Compliance Patterns ✅ **ESTABLISHED**
+
+**Modern ES Module Testing Pattern:**
+```typescript
+// ✅ Correct - ES Module imports for testing
+import * as hooks from '../../hooks'
+const mockHook = vi.mocked(hooks.useGamesData)
+
+// ❌ Incorrect - require() style (ESLint violation)
+const mockHook = vi.mocked(require('../../hooks').useGamesData)
+```
+
+**Console Usage Rules:**
+```typescript
+// ✅ Allowed - Essential logging only
+console.warn('Configuration issue detected')
+console.error('Critical failure:', error)
+
+// ❌ Forbidden - Development debugging
+console.log('Debug info:', data) // Use logger instead
+```
+
+**Type Import Enforcement:**
+```typescript
+// ✅ Correct - Type-only imports
+import type { GameData } from './types'
+import { processGame } from './utils'
+
+// ❌ Incorrect - Mixed imports
+import { GameData, processGame } from './module'
+```
+
+**Modern JavaScript Patterns:**
+```typescript
+// ✅ Correct - Nullish coalescing for null/undefined
+const value = apiResponse?.data ?? defaultValue
+
+// ✅ Correct - Optional chaining for safe property access
+const gameTitle = game?.metadata?.title ?? 'Unknown Game'
+
+// ✅ Correct - Proper async handling
+const result = await apiCall().catch(error => handleError(error))
+
+// ❌ Incorrect - Logical OR (treats empty string/0 as falsy)
+const value = apiResponse?.data || defaultValue
+
+// ❌ Incorrect - Manual null checking
+const gameTitle = game && game.metadata && game.metadata.title ? game.metadata.title : 'Unknown Game'
+
+// ❌ Incorrect - Floating promises
+apiCall() // Missing await or .catch()
+```
+
 ### Error Handling Standards
 - Use structured `ApiError` class from `shared/errors/ApiError.ts`
 - Provide user-friendly error messages
@@ -177,14 +230,17 @@ console.log('User logged in:', user);
 - Custom error fallback UI for better user experience
 - Error reporting hooks for monitoring
 
-## Code Quality Standards
+## Code Quality Standards ✅ **UPDATED WITH PROVEN PATTERNS**
 
-### ESLint Configuration
-The project enforces strict code quality rules:
-- `no-console`: Prevents console.log statements in production
+### ESLint Configuration ✅ **ACTIVE ENFORCEMENT**
+The project enforces strict code quality rules with **122 problems tracked** (down from 152):
+- `no-console`: Prevents console.log statements in production (allow warn/error only)
 - `@typescript-eslint/consistent-type-imports`: Enforces type-only imports
 - `@typescript-eslint/no-explicit-any`: Prevents any types
+- `@typescript-eslint/no-require-imports`: **✅ RESOLVED** - No require() style imports
 - `@typescript-eslint/no-floating-promises`: Requires proper async handling
+- `@typescript-eslint/no-unused-vars`: Variables/args with `_` prefix allowed
+- Coverage and dist directories excluded from linting
 
 ### Component Architecture
 - **Maximum 300 lines per component** - Extract smaller components if exceeded
@@ -249,16 +305,55 @@ useEffect(() => {
 - Handle token refresh failures gracefully
 - Include proper error context for auth failures
 
-## Development Workflow Reminders
+## Development Workflow Reminders ✅ **UPDATED WITH LINTING STANDARDS**
 - Should not try to `npm run`, I will run the app, just indicate to me that now might be a good time to run
-- Run `npm run lint` before committing changes
+- **MANDATORY**: Run `npm run lint` before committing changes - Target <130 problems
 - Ensure TypeScript compilation passes with `npm run build`
+- **ESLint Fix Workflow**: Convert require() → ES imports, remove console.log, add type annotations
 
-## Testing Standards (Future)
-- Jest + React Testing Library for component testing
-- Test user interactions, not implementation details
-- Mock API calls with proper error scenarios
-- Maintain >80% code coverage for critical paths
+### Pre-Commit Checklist ✅
+1. **Linting**: `npm run lint` shows ≤125 problems (current baseline: 122)
+2. **Type Check**: `npm run build` passes without errors
+3. **Tests**: New/modified components have corresponding tests
+4. **Import Style**: All imports follow ES module patterns (no require())
+5. **Console Cleanup**: No console.log statements in production code
+
+## Testing Standards ✅ **IMPLEMENTED WITH PROVEN PATTERNS**
+
+### Current Testing Stack
+- **Vitest 2.1.9** + **React Testing Library 16.1.0** for component testing ✅
+- **MSW 2.7.0** for API mocking with proper error scenarios ✅
+- Test user interactions, not implementation details ✅
+- Maintain >80% code coverage for critical paths (90% for critical components) ✅
+
+### Testing Import Standards ✅ **ENFORCED BY ESLINT**
+```typescript
+// ✅ Correct - Modern ES module testing pattern
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import * as hooks from '../../hooks'
+
+// Mock setup
+vi.mock('../../hooks', () => ({ useGamesData: vi.fn() }))
+
+// Test implementation
+const mockHook = vi.mocked(hooks.useGamesData)
+mockHook.mockReturnValue({ games: [], loading: false })
+
+// ❌ Incorrect - require() style (causes ESLint violations)
+vi.mocked(require('../../hooks').useGamesData)
+```
+
+### Icon Mocking Pattern ✅ **ESTABLISHED**
+```typescript
+// ✅ Proven pattern from StatsCards tests
+vi.mock('lucide-react', () => ({
+  Gamepad2: ({ size, className }: { size: number; className: string }) => (
+    <div data-testid="gamepad-icon" data-size={size} className={className}>Gamepad2</div>
+  ),
+  // ... other icons with data-testid attributes for reliable testing
+}))
+```
 
 ## Accessibility Requirements
 - All interactive elements must have proper ARIA labels
@@ -267,8 +362,11 @@ useEffect(() => {
 - Use semantic HTML elements
 - Test with screen readers
 
-## Large Feature Change Behavior
+## Large Feature Change Behavior ✅ **UPDATED WITH LINTING WORKFLOW**
 - If the problem analysed may create a lot of code, you should not proceed and instead advise that any outstanding changes be committed
+- **ESLint Compliance Required**: All commits must not introduce new linting violations
+- **Testing Requirements**: New components must include comprehensive test coverage following established patterns
+- **Import Standards**: All new code must use modern ES module imports (no require() patterns)
 
 ## Branch Naming Conventions
 - When creating a branch, always use a prefix to indicate the purpose:

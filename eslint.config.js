@@ -18,6 +18,10 @@ export default tseslint.config([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     rules: {
       // Prevent console.log statements in production code
@@ -42,7 +46,19 @@ export default tseslint.config([
       '@typescript-eslint/no-explicit-any': 'error',
       
       // Prevent empty catch blocks (use standard rule)
-      'no-empty': ['error', { "allowEmptyCatch": false }]
+      'no-empty': ['error', { "allowEmptyCatch": false }],
+
+      // Prevent require() style imports (already handled by typescript-eslint)
+      '@typescript-eslint/no-require-imports': 'error',
+
+      // Prevent floating promises - enforce proper async handling (warning level)
+      '@typescript-eslint/no-floating-promises': 'warn',
+
+      // Prefer nullish coalescing over logical OR for null/undefined checks (warning level)
+      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+
+      // Prefer optional chaining over manual null checks (warning level)
+      '@typescript-eslint/prefer-optional-chain': 'warn'
     },
   },
 ])
